@@ -1,5 +1,7 @@
 package com.pushpal.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
@@ -9,6 +11,8 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class DataSourceConfig {
 
+    private static final Logger log = LoggerFactory.getLogger(DataSourceConfig.class);
+
     @Bean
     public static BeanPostProcessor databaseUrlParsingBeanPostProcessor() {
         return new BeanPostProcessor() {
@@ -16,6 +20,9 @@ public class DataSourceConfig {
             public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
                 if (bean instanceof DataSourceProperties properties) {
                     apply(properties);
+                    if (properties.getUrl() != null) {
+                        log.info("Resolved datasource URL: {}", sanitize(properties.getUrl()));
+                    }
                 }
                 return bean;
             }
@@ -53,5 +60,10 @@ public class DataSourceConfig {
             properties.setPassword(userInfo.substring(colon + 1));
         }
         properties.setUrl("jdbc:postgresql://" + hostPort + rest);
+    }
+
+    static String sanitize(String url) {
+        int at = url.indexOf('@');
+        return at >= 0 ? "jdbc:postgresql://" + url.substring(at + 1) : url;
     }
 }
