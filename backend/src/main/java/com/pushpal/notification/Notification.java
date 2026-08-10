@@ -52,6 +52,12 @@ public class Notification {
     @Column(name = "failure_reason")
     private String failureReason;
 
+    @Column(name = "retry_count", nullable = false)
+    private int retryCount = 0;
+
+    @Column(name = "next_attempt_at")
+    private Instant nextAttemptAt;
+
     @PrePersist
     protected void onCreate() {
         id = UUID.randomUUID();

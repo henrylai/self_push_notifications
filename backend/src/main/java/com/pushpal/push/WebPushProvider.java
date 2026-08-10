@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import nl.martijndwars.webpush.Notification;
 import nl.martijndwars.webpush.PushService;
+import org.apache.http.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -26,7 +27,7 @@ public class WebPushProvider implements NotificationProvider {
     public SendResult send(PushSubscription subscription, NotificationPayload payload) {
         if (pushService == null) {
             log.warn("Web Push is not configured; skipping notification to endpoint: {}", subscription.getEndpoint());
-            return new SendResult(false, "Web Push not configured");
+            return SendResult.failure("Web Push not configured");
         }
         try {
             String jsonPayload = gson.toJson(Map.of(
@@ -40,11 +41,21 @@ public class WebPushProvider implements NotificationProvider {
                     subscription.getAuthKey(),
                     jsonPayload.getBytes());
 
-            pushService.send(notification);
-            return new SendResult(true, null);
+            HttpResponse response = pushService.send(notification);
+            int status = response.getStatusLine().getStatusCode();
+
+            if (status >= 200 && status < 300) {
+                return SendResult.ok();
+            }
+            if (status == 404 || status == 410) {
+                log.warn("Push endpoint gone (HTTP {}): {}", status, subscription.getEndpoint());
+                return SendResult.subscriptionGone("Subscription no longer valid (HTTP " + status + ")");
+            }
+            log.warn("Push failed with HTTP {}: {}", status, subscription.getEndpoint());
+            return SendResult.failure("Push service returned HTTP " + status);
         } catch (Exception e) {
             log.error("Failed to send push notification to endpoint: {}", subscription.getEndpoint(), e);
-            return new SendResult(false, e.getMessage());
+            return SendResult.failure(e.getMessage());
         }
     }
 }

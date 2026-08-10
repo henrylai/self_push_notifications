@@ -37,7 +37,7 @@ public class EmailService {
         message.setText("""
                 Hello,
 
-                Use this link to sign in to PushPal (valid for 15 minutes, single use):
+                Use this link to sign in to PushPal (valid for 30 days, single use):
 
                 %s
 

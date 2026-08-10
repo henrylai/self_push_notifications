@@ -31,8 +31,9 @@ export interface Device {
 
 export interface Relationship {
   id: string;
-  partnerName: string;
-  partnerEmail: string;
+  partnerId: string | null;
+  partnerName: string | null;
+  partnerEmail: string | null;
   status: string;
 }
 

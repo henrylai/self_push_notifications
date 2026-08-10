@@ -39,10 +39,13 @@ public class RelationshipController {
     }
 
     @GetMapping
-    public ResponseEntity<List<UserRelationship>> listRelationships(
+    public ResponseEntity<List<RelationshipDto>> listRelationships(
             @AuthenticationPrincipal UserDetails userDetails) {
         UUID userId = UUID.fromString(userDetails.getUsername());
-        List<UserRelationship> relationships = relationshipService.getRelationshipsForUser(userId);
+        List<RelationshipDto> relationships = relationshipService.getRelationshipsForUser(userId)
+                .stream()
+                .map(r -> RelationshipDto.fromEntity(r, userId))
+                .toList();
         return ResponseEntity.ok(relationships);
     }
 }

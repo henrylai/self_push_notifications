@@ -21,11 +21,11 @@
 | 9 | Notification list view (Sent/Received) | frontend | high |
 
 **Completion criteria:**
-- [ ] User can sign in with Google or magic link
-- [ ] User can register a device for push notifications
-- [ ] User can schedule a self-reminder
-- [ ] User receives push notification at scheduled time
-- [ ] User can see notifications in a list
+- [x] User can sign in with Google or magic link (code complete; requires Railway env vars to activate)
+- [x] User can register a device for push notifications
+- [x] User can schedule a self-reminder
+- [x] User receives push notification at scheduled time (code complete; verify on Railway)
+- [x] User can see notifications in a list
 
 ---
 
@@ -50,12 +50,12 @@
 | 18 | Error handling + retry logic | backend | high |
 
 **Completion criteria:**
-- [ ] User can generate an invite code
-- [ ] User can accept an invite code to link with partner
-- [ ] User can send a reminder to their partner
-- [ ] Partner receives the notification
-- [ ] Sender can see delivery status
-- [ ] Sender can cancel a pending notification
+- [x] User can generate an invite code
+- [x] User can accept an invite code to link with partner
+- [x] User can send a reminder to their partner
+- [x] Partner receives the notification (verify on Railway)
+- [x] Sender can see delivery status
+- [x] Sender can cancel a pending notification
 
 ---
 

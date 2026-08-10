@@ -1,16 +1,18 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Input from '@/components/ui/input';
 import Textarea from '@/components/ui/textarea';
 import Button from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
+import type { Relationship } from '@/types';
 
 export default function CreateNotificationForm() {
   const router = useRouter();
   const { addToast } = useToast();
+  const [relationships, setRelationships] = useState<Relationship[]>([]);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [recipient, setRecipient] = useState('me');
@@ -18,16 +20,25 @@ export default function CreateNotificationForm() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    api.getRelationships().then(setRelationships).catch(() => {});
+  }, []);
+
+  const linkedPartner = relationships.find((r) => r.status === 'ACCEPTED' && r.partnerId);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError('');
     setSubmitting(true);
 
+    const recipientId =
+      recipient === 'partner' && linkedPartner ? linkedPartner.partnerId : undefined;
+
     try {
       await api.createNotification({
         title,
         body: body || undefined,
-        recipientId: recipient,
+        recipientId,
         scheduledTime: new Date(scheduledTime).toISOString(),
       });
       addToast('Reminder scheduled!');
@@ -66,8 +77,15 @@ export default function CreateNotificationForm() {
           className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
         >
           <option value="me">Me</option>
-          <option value="partner">Partner</option>
+          <option value="partner" disabled={!linkedPartner}>
+            {linkedPartner ? `Partner (${linkedPartner.partnerName})` : 'Partner (no partner linked)'}
+          </option>
         </select>
+        {!linkedPartner && (
+          <p className="mt-1 text-xs text-gray-500">
+            Link a partner in Settings to send reminders to them.
+          </p>
+        )}
       </div>
       <Input
         label="Date & Time"

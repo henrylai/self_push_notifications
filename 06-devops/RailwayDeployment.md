@@ -110,6 +110,8 @@ Set in Railway dashboard:
 | `GOOGLE_CLIENT_ID` | Manual (Google Cloud OAuth client) |
 | `GOOGLE_CLIENT_SECRET` | Manual (Google Cloud OAuth client) |
 | `MAGIC_LINK_BASE_URL` | Manual (`https://pushpal.up.railway.app`) |
+| `API_BASE_URL` | Manual — the API's public domain, e.g. `https://<api>.up.railway.app`; enables push "delivered" reporting from the service worker |
+| `CORS_ALLOWED_ORIGIN` | Manual (`https://pushpal.up.railway.app`) — REQUIRED for deployed FE→API calls |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD` | Manual (optional — enables magic-link emails) |
 | `MAIL_FROM` | Manual (optional, e.g. `PushPal <noreply@pushpal.app>`) |
 
@@ -152,7 +154,7 @@ Flow: FE redirects to Google → Google calls back with `?code=` → FE posts `{
 
 Without SMTP credentials, magic links are logged to the API console (e.g. `SMTP not configured — magic link for user@example.com: https://pushpal.up.railway.app/auth/callback?token=...`) so you can still sign in via the Railway logs.
 
-To send real emails, set `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USERNAME`, `SMTP_PASSWORD`, and optionally `MAIL_FROM` on `pushpal-api`. Magic-link tokens are 64-char, SHA-256-hashed, single-use, and expire after 15 minutes.
+To send real emails, set `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USERNAME`, `SMTP_PASSWORD`, and optionally `MAIL_FROM` on `pushpal-api`. Magic-link tokens are 64-char, SHA-256-hashed, single-use, and expire after 30 days.
 
 ---
 

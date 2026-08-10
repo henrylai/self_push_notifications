@@ -29,7 +29,7 @@ public class AuthService {
     private final EmailService emailService;
     private final GoogleOAuthService googleOAuthService;
 
-    @Value("${app.magic-link.expiration-minutes:15}")
+    @Value("${app.magic-link.expiration-minutes:43200}")
     private long magicLinkExpirationMinutes;
 
     @Value("${app.magic-link.base-url:http://localhost:3000}")

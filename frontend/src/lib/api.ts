@@ -1,4 +1,4 @@
-import type { AuthResponse } from '@/types';
+import type { AuthResponse, Notification, Relationship } from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -41,7 +41,7 @@ export const api = {
     request<{ inviteCode: string }>('/api/relationships/invite', { method: 'POST' }),
   acceptInvite: (inviteCode: string) =>
     request<any>('/api/relationships/accept', { method: 'POST', body: JSON.stringify({ inviteCode }) }),
-  getRelationships: () => request<any[]>('/api/relationships'),
+  getRelationships: () => request<Relationship[]>('/api/relationships'),
 
   // Devices
   registerDevice: (subscription: any) =>
@@ -53,10 +53,13 @@ export const api = {
   // Notifications
   createNotification: (data: any) =>
     request<any>('/api/notifications', { method: 'POST', body: JSON.stringify(data) }),
-  getNotifications: () => request<any[]>('/api/notifications'),
+  getNotifications: () =>
+    request<{ received: Notification[]; sent: Notification[] }>('/api/notifications'),
   getNotification: (id: string) => request<any>(`/api/notifications/${id}`),
   cancelNotification: (id: string) =>
     request<void>(`/api/notifications/${id}`, { method: 'DELETE' }),
   markViewed: (id: string) =>
     request<any>(`/api/notifications/${id}/viewed`, { method: 'POST' }),
+  markDelivered: (id: string) =>
+    request<any>(`/api/notifications/${id}/delivered`, { method: 'POST' }),
 };

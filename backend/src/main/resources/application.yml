@@ -47,10 +47,11 @@ app:
     token-uri: https://oauth2.googleapis.com/token
     userinfo-uri: https://www.googleapis.com/oauth2/v2/userinfo
   magic-link:
-    expiration-minutes: 15
+    expiration-minutes: 43200
     base-url: ${MAGIC_LINK_BASE_URL:http://localhost:3000}
   mail:
     from: ${MAIL_FROM:PushPal <noreply@pushpal.app>}
+  api-base-url: ${API_BASE_URL:}
   scheduler:
     enabled: true
     interval-ms: 30000

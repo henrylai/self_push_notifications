@@ -48,7 +48,7 @@ class AuthServiceTest {
     void setUp() {
         authService = new AuthService(
                 userRepository, magicLinkTokenRepository, jwtTokenProvider, emailService, googleOAuthService);
-        ReflectionTestUtils.setField(authService, "magicLinkExpirationMinutes", 15L);
+        ReflectionTestUtils.setField(authService, "magicLinkExpirationMinutes", 43200L);
         ReflectionTestUtils.setField(authService, "magicLinkBaseUrl", "https://pushpal.up.railway.app");
     }
 

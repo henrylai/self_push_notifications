@@ -5,7 +5,7 @@ import { api } from '@/lib/api';
 import type { Notification } from '@/types';
 
 export function useNotifications() {
-  return useQuery<Notification[]>({
+  return useQuery<{ received: Notification[]; sent: Notification[] }>({
     queryKey: ['notifications'],
     queryFn: api.getNotifications,
   });

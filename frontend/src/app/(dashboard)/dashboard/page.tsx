@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { api } from '@/lib/api';
@@ -11,8 +12,23 @@ import { cn } from '@/lib/utils';
 import type { Notification } from '@/types';
 
 export default function DashboardPage() {
+  return (
+    <Suspense
+      fallback={<div className="py-12 text-center text-sm text-gray-500">Loading...</div>}
+    >
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<'sent' | 'received'>('sent');
-  const { data: notifications, isLoading, refetch } = useQuery<Notification[]>({
+  const { data: notifications, isLoading, refetch } = useQuery<{
+    received: Notification[];
+    sent: Notification[];
+  }>({
     queryKey: ['notifications'],
     queryFn: api.getNotifications,
   });
@@ -22,9 +38,21 @@ export default function DashboardPage() {
     queryFn: api.getMe,
   });
 
-  const filtered = notifications?.filter((n) =>
-    tab === 'sent' ? n.senderId === user?.id : n.recipientId === user?.id
-  );
+  const viewedId = searchParams.get('viewed');
+
+  useEffect(() => {
+    if (!viewedId) return;
+    api.markViewed(viewedId).catch(() => {});
+    const url = new URL(window.location.href);
+    url.searchParams.delete('viewed');
+    router.replace(url.pathname + url.search);
+  }, [viewedId, router]);
+
+  const filtered = notifications
+    ? [...notifications.sent, ...notifications.received].filter((n) =>
+        tab === 'sent' ? n.senderId === user?.id : n.recipientId === user?.id
+      )
+    : undefined;
 
   return (
     <div className="flex flex-col gap-4">

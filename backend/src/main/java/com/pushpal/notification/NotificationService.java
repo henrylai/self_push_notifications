@@ -15,6 +15,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class NotificationService {
 
+    private static final long RETRY_DELAY_SECONDS = 60;
+
     private final NotificationRepository notificationRepository;
 
     @Transactional
@@ -79,6 +81,16 @@ public class NotificationService {
         Notification notification = notificationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
         notification.setStatus(NotificationStatus.FAILED);
+        notification.setFailureReason(reason);
+        return notificationRepository.save(notification);
+    }
+
+    @Transactional
+    public Notification markForRetry(UUID id, String reason) {
+        Notification notification = notificationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
+        notification.setRetryCount(notification.getRetryCount() + 1);
+        notification.setNextAttemptAt(Instant.now().plusSeconds(RETRY_DELAY_SECONDS));
         notification.setFailureReason(reason);
         return notificationRepository.save(notification);
     }

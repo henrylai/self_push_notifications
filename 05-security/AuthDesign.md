@@ -87,7 +87,7 @@ Frontend stores JWT in localStorage
 
 **Magic Link Token Properties:**
 - Length: 64 characters (random)
-- Expiry: 15 minutes
+- Expiry: 30 days
 - Single-use
 - Stored hashed in database
 

@@ -57,7 +57,27 @@ public class NotificationController {
     public ResponseEntity<NotificationDto> markAsViewed(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable UUID id) {
-        Notification notification = notificationService.markAsViewed(id);
-        return ResponseEntity.ok(NotificationDto.fromEntity(notification));
+        UUID userId = UUID.fromString(userDetails.getUsername());
+        Notification notification = notificationService.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
+        if (!notification.getRecipientId().equals(userId)) {
+            return ResponseEntity.status(403).build();
+        }
+        Notification updated = notificationService.markAsViewed(id);
+        return ResponseEntity.ok(NotificationDto.fromEntity(updated));
+    }
+
+    @PostMapping("/{id}/delivered")
+    public ResponseEntity<NotificationDto> markAsDelivered(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable UUID id) {
+        UUID userId = UUID.fromString(userDetails.getUsername());
+        Notification notification = notificationService.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Notification not found"));
+        if (!notification.getRecipientId().equals(userId)) {
+            return ResponseEntity.status(403).build();
+        }
+        Notification updated = notificationService.markAsDelivered(id);
+        return ResponseEntity.ok(NotificationDto.fromEntity(updated));
     }
 }

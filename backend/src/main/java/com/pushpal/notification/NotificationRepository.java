@@ -16,6 +16,7 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
 
     List<Notification> findBySenderIdOrderByCreatedAtDesc(UUID senderId);
 
-    @Query("SELECT n FROM Notification n WHERE n.status = 'PENDING' AND n.scheduledTime <= :now")
+    @Query("SELECT n FROM Notification n WHERE n.status = 'PENDING' " +
+            "AND (n.scheduledTime <= :now OR (n.nextAttemptAt IS NOT NULL AND n.nextAttemptAt <= :now))")
     Page<Notification> findPendingNotifications(@Param("now") Instant now, Pageable pageable);
 }
