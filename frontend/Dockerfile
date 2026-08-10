@@ -23,6 +23,6 @@ COPY --from=build /app/out ./out
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD wget -q -O /dev/null http://localhost:3000/ || exit 1
+  CMD sh -c "wget -q -O /dev/null http://localhost:${PORT:-3000}/ || exit 1"
 
-CMD ["sh", "-c", "serve out -l $PORT"]
+CMD ["sh", "-c", "serve -s out -l tcp://0.0.0.0:${PORT:-3000}"]
