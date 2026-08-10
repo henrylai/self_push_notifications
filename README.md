@@ -80,12 +80,14 @@ Copy `.env.example` files and fill in:
 - `VAPID_PRIVATE_KEY` — Web Push VAPID private key
 - `VAPID_SUBJECT` — Contact email for VAPID
 - `GOOGLE_CLIENT_ID` — Google OAuth client ID
-- `MAGIC_LINK_SECRET` — Secret for magic link tokens
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` — Email for magic links
+- `GOOGLE_CLIENT_SECRET` — Google OAuth client secret
+- `MAGIC_LINK_BASE_URL` — Frontend origin used in magic links (e.g. `https://pushpal.up.railway.app`)
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `MAIL_FROM` — Email for magic links (optional; magic links are logged to console when SMTP is not set)
 
 **Frontend**:
 - `NEXT_PUBLIC_API_URL` — Backend URL (default: `http://localhost:8080`)
 - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` — Same VAPID public key as backend
+- `NEXT_PUBLIC_GOOGLE_CLIENT_ID` — Google OAuth client ID (same as backend)
 
 ### Generate VAPID Keys
 

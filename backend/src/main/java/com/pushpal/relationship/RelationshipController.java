@@ -1,6 +1,5 @@
 package com.pushpal.relationship;
 
-import com.pushpal.auth.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,12 +16,11 @@ import java.util.UUID;
 public class RelationshipController {
 
     private final RelationshipService relationshipService;
-    private final AuthService authService;
 
     @PostMapping("/invite")
     public ResponseEntity<Map<String, String>> createInvite(@AuthenticationPrincipal UserDetails userDetails) {
         UUID userId = UUID.fromString(userDetails.getUsername());
-        String inviteCode = authService.generateInviteCode();
+        String inviteCode = relationshipService.generateInviteCode();
         relationshipService.createInvite(userId, inviteCode);
         return ResponseEntity.ok(Map.of("inviteCode", inviteCode));
     }

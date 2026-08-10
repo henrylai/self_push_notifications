@@ -203,8 +203,8 @@ google:
   client-secret: ${GOOGLE_CLIENT_SECRET}
 
 magic-link:
-  secret: ${MAGIC_LINK_SECRET}
   expiry: 15m
+  base-url: ${MAGIC_LINK_BASE_URL}
 
 webpush:
   vapid-public-key: ${VAPID_PUBLIC_KEY}

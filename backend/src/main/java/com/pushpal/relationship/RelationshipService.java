@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -12,7 +13,19 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class RelationshipService {
 
+    private static final String INVITE_CODE_CHARACTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    private static final int INVITE_CODE_LENGTH = 6;
+    private static final SecureRandom RANDOM = new SecureRandom();
+
     private final RelationshipRepository relationshipRepository;
+
+    public String generateInviteCode() {
+        StringBuilder code = new StringBuilder(INVITE_CODE_LENGTH);
+        for (int i = 0; i < INVITE_CODE_LENGTH; i++) {
+            code.append(INVITE_CODE_CHARACTERS.charAt(RANDOM.nextInt(INVITE_CODE_CHARACTERS.length())));
+        }
+        return code.toString();
+    }
 
     @Transactional
     public UserRelationship createInvite(UUID inviterId, String inviteCode) {

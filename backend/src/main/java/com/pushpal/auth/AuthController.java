@@ -31,11 +31,12 @@ public class AuthController {
 
     @PostMapping("/google")
     public ResponseEntity<AuthResponse> googleLogin(@RequestBody Map<String, String> request) {
-        String idToken = request.get("idToken");
-        if (idToken == null || idToken.isBlank()) {
+        String code = request.get("code");
+        String redirectUri = request.get("redirectUri");
+        if (code == null || code.isBlank() || redirectUri == null || redirectUri.isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-        AuthResponse response = authService.googleLogin(idToken);
+        AuthResponse response = authService.googleLogin(code, redirectUri);
         return ResponseEntity.ok(response);
     }
 

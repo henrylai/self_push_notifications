@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
 import { setToken, setStoredUser } from '@/lib/auth';
@@ -18,23 +18,44 @@ function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [error, setError] = useState('');
+  const handled = useRef(false);
 
   useEffect(() => {
+    if (handled.current) return;
+    handled.current = true;
+
     const token = searchParams.get('token');
-    if (!token) {
+    const code = searchParams.get('code');
+
+    if (!token && !code) {
       setError('No token found in URL');
       return;
     }
 
+    if (token) {
+      api
+        .verifyMagicLink(token)
+        .then((res) => {
+          setToken(res.token);
+          setStoredUser(res.user);
+          router.replace('/dashboard');
+        })
+        .catch(() => {
+          setError('Invalid or expired magic link');
+        });
+      return;
+    }
+
+    const redirectUri = `${window.location.origin}/auth/callback`;
     api
-      .verifyMagicLink(token)
+      .googleLogin(code!, redirectUri)
       .then((res) => {
         setToken(res.token);
         setStoredUser(res.user);
         router.replace('/dashboard');
       })
-      .catch(() => {
-        setError('Invalid or expired token');
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : 'Google sign-in failed');
       });
   }, [searchParams, router]);
 

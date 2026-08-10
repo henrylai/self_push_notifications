@@ -19,7 +19,7 @@ All secrets are stored as environment variables in Railway. No secrets are commi
 | `VAPID_SUBJECT` | VAPID subject (mailto:) | Railway env | Never |
 | `GOOGLE_CLIENT_ID` | Google OAuth2 client ID | Railway env | On compromise |
 | `GOOGLE_CLIENT_SECRET` | Google OAuth2 client secret | Railway env | On compromise |
-| `MAGIC_LINK_SECRET` | Magic link token signing key | Railway env | Every 90 days |
+| `MAGIC_LINK_BASE_URL` | Frontend origin for magic links (not a secret) | Railway env | Never |
 | `SMTP_HOST` | Email server host | Railway env | Never |
 | `SMTP_PORT` | Email server port | Railway env | Never |
 | `SMTP_USERNAME` | Email server username | Railway env | On compromise |
@@ -44,7 +44,7 @@ VAPID_PRIVATE_KEY=<vapid-private>
 VAPID_SUBJECT=mailto:pushpal@example.com
 GOOGLE_CLIENT_ID=<google-client-id>
 GOOGLE_CLIENT_SECRET=<google-client-secret>
-MAGIC_LINK_SECRET=<256-bit-random-hex>
+MAGIC_LINK_BASE_URL=https://pushpal.up.railway.app
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_USERNAME=notifications@pushpal.app
@@ -53,7 +53,7 @@ SMTP_PASSWORD=<smtp-password>
 
 ### Frontend Variables (Public Only)
 
-Only `VAPID_PUBLIC_KEY` is needed on the frontend. It is **not** a secret.
+Only public build-time values are needed on the frontend: `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, and `NEXT_PUBLIC_GOOGLE_CLIENT_ID`. They are **not** secrets.
 
 ```typescript
 // lib/push.ts

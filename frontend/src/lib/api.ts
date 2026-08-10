@@ -1,3 +1,5 @@
+import type { AuthResponse } from '@/types';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -22,9 +24,12 @@ export const api = {
   requestMagicLink: (email: string) =>
     request('/api/auth/magic-link', { method: 'POST', body: JSON.stringify({ email }) }),
   verifyMagicLink: (token: string) =>
-    request<{ token: string; user: any }>(`/api/auth/magic-link/verify?token=${token}`),
-  googleLogin: (idToken: string) =>
-    request<{ token: string; user: any }>('/api/auth/google', { method: 'POST', body: JSON.stringify({ idToken }) }),
+    request<AuthResponse>(`/api/auth/magic-link/verify?token=${token}`),
+  googleLogin: (code: string, redirectUri: string) =>
+    request<AuthResponse>('/api/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ code, redirectUri }),
+    }),
 
   // User
   getMe: () => request<any>('/api/users/me'),
