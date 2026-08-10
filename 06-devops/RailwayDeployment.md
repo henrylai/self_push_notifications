@@ -112,8 +112,8 @@ Set in Railway dashboard:
 | `MAGIC_LINK_BASE_URL` | Manual (`https://pushpal.up.railway.app`) |
 | `API_BASE_URL` | Manual — the API's public domain, e.g. `https://<api>.up.railway.app`; enables push "delivered" reporting from the service worker |
 | `CORS_ALLOWED_ORIGIN` | Manual (`https://pushpal.up.railway.app`) — REQUIRED for deployed FE→API calls |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD` | Manual (optional — enables magic-link emails) |
-| `MAIL_FROM` | Manual (optional, e.g. `PushPal <noreply@pushpal.app>`) |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` (or `SMTP_USERNAME`), `SMTP_PASS` (or `SMTP_PASSWORD`) | Manual (optional — enables magic-link emails; Gmail: app password, port 587) |
+| `MAIL_FROM` | Manual (optional; defaults to `SMTP_USER`, which Gmail requires) |
 
 #### `DATABASE_URL` format
 

@@ -82,7 +82,7 @@ Copy `.env.example` files and fill in:
 - `GOOGLE_CLIENT_ID` — Google OAuth client ID
 - `GOOGLE_CLIENT_SECRET` — Google OAuth client secret
 - `MAGIC_LINK_BASE_URL` — Frontend origin used in magic links (e.g. `https://pushpal.up.railway.app`)
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `MAIL_FROM` — Email for magic links (optional; magic links are logged to console when SMTP is not set)
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` / `SMTP_USERNAME`, `SMTP_PASS` / `SMTP_PASSWORD`, `MAIL_FROM` — Email for magic links (optional; magic links are logged to console when SMTP is not set). `MAIL_FROM` defaults to `SMTP_USER` for Gmail compatibility.
 
 **Frontend**:
 - `NEXT_PUBLIC_API_URL` — Backend URL (default: `http://localhost:8080`)
