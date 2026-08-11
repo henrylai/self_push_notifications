@@ -106,7 +106,9 @@ class AuthServiceTest {
         String token = "valid-token";
         MagicLinkToken stored = newToken("user@example.com", token, Instant.now().plusSeconds(900));
 
-        when(magicLinkTokenRepository.findByTokenHashForUpdate(sha256(token)))
+        when(magicLinkTokenRepository.consumeValidToken(eq(sha256(token)), any(Instant.class)))
+                .thenReturn(1);
+        when(magicLinkTokenRepository.findByTokenHash(sha256(token)))
                 .thenReturn(Optional.of(stored));
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenReturn(user);
@@ -116,12 +118,13 @@ class AuthServiceTest {
 
         assertThat(response.token()).isEqualTo("jwt-token");
         assertThat(response.user().email()).isEqualTo("user@example.com");
-        assertThat(stored.getUsedAt()).isNotNull();
+        verify(magicLinkTokenRepository).consumeValidToken(
+                eq(sha256(token)), any(Instant.class));
     }
 
     @Test
     void verifyMagicLinkRejectsUnknownToken() {
-        when(magicLinkTokenRepository.findByTokenHashForUpdate(any())).thenReturn(Optional.empty());
+        when(magicLinkTokenRepository.consumeValidToken(any(), any(Instant.class))).thenReturn(0);
 
         assertThatThrownBy(() -> authService.verifyMagicLink("unknown"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -132,23 +135,23 @@ class AuthServiceTest {
     void verifyMagicLinkRejectsUsedToken() {
         MagicLinkToken stored = newToken("user@example.com", "used-token", Instant.now().plusSeconds(900));
         stored.setUsedAt(Instant.now().minusSeconds(60));
-        when(magicLinkTokenRepository.findByTokenHashForUpdate(sha256("used-token")))
-                .thenReturn(Optional.of(stored));
+        when(magicLinkTokenRepository.consumeValidToken(
+                eq(sha256("used-token")), any(Instant.class))).thenReturn(0);
 
         assertThatThrownBy(() -> authService.verifyMagicLink("used-token"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("already been used");
+                .hasMessageContaining("Invalid or expired");
     }
 
     @Test
     void verifyMagicLinkRejectsExpiredToken() {
         MagicLinkToken stored = newToken("user@example.com", "expired-token", Instant.now().minusSeconds(60));
-        when(magicLinkTokenRepository.findByTokenHashForUpdate(sha256("expired-token")))
-                .thenReturn(Optional.of(stored));
+        when(magicLinkTokenRepository.consumeValidToken(
+                eq(sha256("expired-token")), any(Instant.class))).thenReturn(0);
 
         assertThatThrownBy(() -> authService.verifyMagicLink("expired-token"))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("expired");
+                .hasMessageContaining("Invalid or expired");
     }
 
     @Test

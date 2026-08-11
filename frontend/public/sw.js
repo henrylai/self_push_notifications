@@ -1,8 +1,8 @@
 self.addEventListener('install', (event) => {
   event.waitUntil(
     Promise.all([
-      caches.open('pushpal-v1').then((cache) =>
-        cache.addAll(['/', '/login', '/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'])
+      caches.open('pushpal-v2').then((cache) =>
+        cache.addAll(['/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'])
       ),
       self.skipWaiting(),
     ])
@@ -13,7 +13,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
       caches.keys().then((keys) =>
-        Promise.all(keys.filter((key) => key !== 'pushpal-v1').map((key) => caches.delete(key)))
+        Promise.all(keys.filter((key) => key !== 'pushpal-v2').map((key) => caches.delete(key)))
       ),
       self.clients.claim(),
     ])
@@ -22,14 +22,19 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const requestUrl = new URL(event.request.url);
-  if (event.request.method !== 'GET' || requestUrl.origin !== self.location.origin) return;
+  const isStaticAsset = requestUrl.pathname.startsWith('/_next/static/')
+    || requestUrl.pathname.startsWith('/icons/')
+    || requestUrl.pathname === '/manifest.json';
+  if (event.request.method !== 'GET'
+      || requestUrl.origin !== self.location.origin
+      || !isStaticAsset) return;
 
   event.respondWith(
     fetch(event.request)
       .then((response) => {
         if (response.ok) {
           const copy = response.clone();
-          return caches.open('pushpal-v1')
+          return caches.open('pushpal-v2')
             .then((cache) => cache.put(event.request, copy))
             .then(() => response);
         }
@@ -38,9 +43,6 @@ self.addEventListener('fetch', (event) => {
       .catch(async () => {
         const cached = await caches.match(event.request);
         if (cached) return cached;
-        if (event.request.mode === 'navigate') {
-          return (await caches.match('/')) || Response.error();
-        }
         return Response.error();
       })
   );

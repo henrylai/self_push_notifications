@@ -107,12 +107,11 @@ self.addEventListener('install', (event) => {
 
   // Pre-cache static assets (optional)
   event.waitUntil(
-    caches.open('pushpal-v1').then((cache) => {
+    caches.open('pushpal-v2').then((cache) => {
       return cache.addAll([
-        '/',
+        '/manifest.json',
         '/icons/icon-192.png',
-        '/icons/icon-512.png',
-        '/icons/badge-72.png'
+        '/icons/icon-512.png'
       ]);
     })
   );
@@ -132,7 +131,7 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames
-          .filter((name) => name !== 'pushpal-v1')
+          .filter((name) => name !== 'pushpal-v2')
           .map((name) => caches.delete(name))
       );
     })
@@ -147,15 +146,16 @@ self.addEventListener('activate', (event) => {
 
 ### 5. Fetch Event (Offline Support)
 
-Cache static assets for offline access. API calls are not cached.
+Cache immutable static assets for offline access. API calls and HTML navigations—including OAuth
+and magic-link callbacks—must never be cached because their URLs can contain single-use secrets.
 
 ```javascript
 self.addEventListener('fetch', (event) => {
-  // Only cache GET requests
-  if (event.request.method !== 'GET') return;
-
-  // Don't cache API calls
-  if (event.request.url.includes('/api/')) return;
+  const url = new URL(event.request.url);
+  const isStaticAsset = url.pathname.startsWith('/_next/static/')
+    || url.pathname.startsWith('/icons/')
+    || url.pathname === '/manifest.json';
+  if (event.request.method !== 'GET' || !isStaticAsset) return;
 
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
@@ -169,7 +169,7 @@ self.addEventListener('fetch', (event) => {
         // Cache successful responses
         if (response.status === 200) {
           const responseClone = response.clone();
-          caches.open('pushpal-v1').then((cache) => {
+          caches.open('pushpal-v2').then((cache) => {
             cache.put(event.request, responseClone);
           });
         }

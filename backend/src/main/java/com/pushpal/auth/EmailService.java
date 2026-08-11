@@ -1,8 +1,10 @@
 package com.pushpal.auth;
 
+import com.pushpal.common.ServiceUnavailableException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -24,10 +26,10 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
-    public boolean sendMagicLink(String to, String url) {
+    public void sendMagicLink(String to, String url) {
         if (mailSender == null || smtpHost == null || smtpHost.isBlank()) {
             log.warn("SMTP not configured; magic link email was not sent");
-            return false;
+            throw new ServiceUnavailableException("Email sign-in is temporarily unavailable");
         }
 
         SimpleMailMessage message = new SimpleMailMessage();
@@ -43,8 +45,12 @@ public class EmailService {
 
                 If you didn't request this link, you can ignore this email.
                 """.formatted(url));
-        mailSender.send(message);
-        log.info("Magic link email sent");
-        return true;
+        try {
+            mailSender.send(message);
+            log.info("Magic link email sent");
+        } catch (MailException e) {
+            log.error("Magic link email delivery failed", e);
+            throw new ServiceUnavailableException("Unable to send sign-in email. Try again later.");
+        }
     }
 }

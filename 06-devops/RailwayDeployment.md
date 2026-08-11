@@ -37,13 +37,14 @@ All three services live in the same Railway project (private networking between 
 | Setting | Value |
 |---|---|
 | Build | Dockerfile in `frontend/` (no `railway.json` startCommand — the Dockerfile `CMD` handles it) |
-| Start | `serve -s out -l tcp://0.0.0.0:${PORT:-3000}` |
+| Start | `serve out -l tcp://0.0.0.0:${PORT:-3000}` |
 | Port | Railway `PORT` env var (defaults to 3000) |
 | Health check | `/` |
 | Build args | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID` |
 
-The Next.js export uses trailing-slash directories (for example, `/login/index.html`) so the static
-server resolves application routes before its single-page fallback.
+The Next.js export uses trailing-slash directories (for example, `/login/index.html`). The static
+server must not use single-page mode: that mode rewrites OAuth and magic-link callbacks to the root
+page before checking their route directories.
 
 ---
 
@@ -94,7 +95,7 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s \
   CMD sh -c "wget -q -O /dev/null http://localhost:${PORT:-3000}/ || exit 1"
 
-CMD ["sh", "-c", "serve -s out -l tcp://0.0.0.0:${PORT:-3000}"]
+CMD ["sh", "-c", "serve out -l tcp://0.0.0.0:${PORT:-3000}"]
 ```
 
 ---
@@ -211,6 +212,7 @@ Traffic routed to new instance
 | `Driver claims to not accept jdbcUrl ... postgresql://host:5432?sslmode=require` | `DATABASE_URL` missing the database name | Add `/railway` before the query string |
 | `The connection attempt failed` / `Connect timed out` | DB service down, paused, or on a trial plan | Verify the DB has a healthy deployment; check plan tier |
 | `serve: Unknown --listen endpoint scheme (protocol): undefined` | Railway `startCommand` is not shell-expanded, so `$PORT` stays literal | Do NOT set `startCommand` in `frontend/railway.json`; rely on the Dockerfile `CMD` with `${PORT:-3000}` |
+| OAuth or magic-link callback returns to `/login` | Static server single-page mode rewrites `/auth/callback` to `/index.html` | Run `serve out` without `-s`; the exported callback directory then receives the query parameters |
 | `next start` ignores `PORT` | Next.js doesn't read `PORT` by default | Pass it explicitly (`next start --port ${PORT:-3000}`) or use `serve` for static exports |
 
 ---

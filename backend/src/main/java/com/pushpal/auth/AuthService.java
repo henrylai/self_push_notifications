@@ -38,6 +38,7 @@ public class AuthService {
     @Value("${app.magic-link.base-url:http://localhost:3000}")
     private String magicLinkBaseUrl;
 
+    @Transactional
     public String requestMagicLink(String email) {
         String normalized = email == null ? "" : email.trim().toLowerCase();
         if (normalized.isBlank() || !normalized.matches(EMAIL_REGEX)) {
@@ -70,17 +71,15 @@ public class AuthService {
             throw new IllegalArgumentException("Token is required");
         }
 
-        MagicLinkToken stored = magicLinkTokenRepository.findByTokenHashForUpdate(hashToken(token))
+        Instant now = Instant.now();
+        String tokenHash = hashToken(token);
+        int consumed = magicLinkTokenRepository.consumeValidToken(tokenHash, now);
+        if (consumed != 1) {
+            throw new IllegalArgumentException("Invalid or expired magic link");
+        }
+
+        MagicLinkToken stored = magicLinkTokenRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid or expired magic link"));
-
-        if (stored.getUsedAt() != null) {
-            throw new IllegalArgumentException("This magic link has already been used");
-        }
-        if (stored.getExpiresAt().isBefore(Instant.now())) {
-            throw new IllegalArgumentException("This magic link has expired");
-        }
-
-        stored.setUsedAt(Instant.now());
         String name = stored.getEmail().split("@")[0];
         User user = findOrCreate(stored.getEmail(), name, "EMAIL", null);
         String jwt = jwtTokenProvider.generateToken(user);
