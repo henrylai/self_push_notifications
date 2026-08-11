@@ -42,9 +42,7 @@ public class UserService {
     public User updateUser(UUID id, String name) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + id));
-        if (name != null && !name.isBlank()) {
-            user.setName(name);
-        }
+        user.setName(name);
         return userRepository.save(user);
     }
 }

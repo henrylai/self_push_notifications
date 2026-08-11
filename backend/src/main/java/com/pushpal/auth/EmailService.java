@@ -26,7 +26,7 @@ public class EmailService {
 
     public boolean sendMagicLink(String to, String url) {
         if (mailSender == null || smtpHost == null || smtpHost.isBlank()) {
-            log.warn("SMTP not configured — magic link for {}: {}", to, url);
+            log.warn("SMTP not configured; magic link email was not sent");
             return false;
         }
 
@@ -37,14 +37,14 @@ public class EmailService {
         message.setText("""
                 Hello,
 
-                Use this link to sign in to PushPal (valid for 30 days, single use):
+                Use this link to sign in to PushPal (valid for 15 minutes, single use):
 
                 %s
 
                 If you didn't request this link, you can ignore this email.
                 """.formatted(url));
         mailSender.send(message);
-        log.info("Magic link emailed to {}", to);
+        log.info("Magic link email sent");
         return true;
     }
 }

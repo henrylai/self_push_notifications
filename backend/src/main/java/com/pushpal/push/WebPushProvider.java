@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Component
@@ -26,14 +27,15 @@ public class WebPushProvider implements NotificationProvider {
     @Override
     public SendResult send(PushSubscription subscription, NotificationPayload payload) {
         if (pushService == null) {
-            log.warn("Web Push is not configured; skipping notification to endpoint: {}", subscription.getEndpoint());
+            log.warn("Web Push is not configured; skipping subscription {}", subscription.getId());
             return SendResult.failure("Web Push not configured");
         }
         try {
-            String jsonPayload = gson.toJson(Map.of(
-                    "title", payload.title(),
-                    "body", payload.body(),
-                    "data", payload.data()));
+            Map<String, Object> pushPayload = new HashMap<>();
+            pushPayload.put("title", payload.title());
+            pushPayload.put("body", payload.body());
+            pushPayload.put("data", payload.data());
+            String jsonPayload = gson.toJson(pushPayload);
 
             Notification notification = new Notification(
                     subscription.getEndpoint(),
@@ -48,14 +50,14 @@ public class WebPushProvider implements NotificationProvider {
                 return SendResult.ok();
             }
             if (status == 404 || status == 410) {
-                log.warn("Push endpoint gone (HTTP {}): {}", status, subscription.getEndpoint());
+                log.warn("Push subscription {} is gone (HTTP {})", subscription.getId(), status);
                 return SendResult.subscriptionGone("Subscription no longer valid (HTTP " + status + ")");
             }
-            log.warn("Push failed with HTTP {}: {}", status, subscription.getEndpoint());
+            log.warn("Push subscription {} failed with HTTP {}", subscription.getId(), status);
             return SendResult.failure("Push service returned HTTP " + status);
         } catch (Exception e) {
-            log.error("Failed to send push notification to endpoint: {}", subscription.getEndpoint(), e);
-            return SendResult.failure(e.getMessage());
+            log.error("Failed to send push notification for subscription {}", subscription.getId(), e);
+            return SendResult.failure("Push delivery failed");
         }
     }
 }

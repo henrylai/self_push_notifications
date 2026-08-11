@@ -2,508 +2,269 @@
 
 ## Base URL
 
-```
-Production: https://api.pushpal.app
+```text
+Production: configured per deployment
 Development: http://localhost:8080
+```
+
+All endpoints except authentication and the scoped delivery callback require a JWT:
+
+```http
+Authorization: Bearer <jwt_token>
+```
+
+Successful responses contain the documented JSON directly. Errors use this shape:
+
+```json
+{
+  "id": "error-correlation-uuid",
+  "status": 400,
+  "error": "Bad Request",
+  "message": "Human-readable message",
+  "timestamp": "2026-08-10T12:00:00Z"
+}
 ```
 
 ## Authentication
 
-All endpoints (except auth) require a JWT token in the `Authorization` header:
+### POST `/api/auth/google`
 
-```
-Authorization: Bearer <jwt_token>
-```
-
-## Standard Response Format
-
-### Success
+Exchange a Google OAuth authorization code for a PushPal JWT.
 
 ```json
 {
-  "data": { ... }
-}
-```
-
-### Error
-
-```json
-{
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Human-readable message"
-  }
-}
-```
-
----
-
-## Auth Endpoints
-
-### POST /api/auth/google
-
-Sign in with Google OAuth2 authorization code.
-
-**Request:**
-```json
-{
-  "code": "google_auth_code",
+  "code": "google_authorization_code",
   "redirectUri": "https://pushpal.app/auth/callback"
 }
 ```
 
-**Response (200):**
 ```json
 {
-  "data": {
-    "token": "jwt_token",
-    "user": {
-      "id": "uuid",
-      "email": "user@gmail.com",
-      "name": "John Doe",
-      "authProvider": "GOOGLE"
-    }
+  "token": "jwt_token",
+  "user": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "name": "User Name"
   }
 }
 ```
 
----
+### POST `/api/auth/magic-link`
 
-### POST /api/auth/magic-link
+Request a single-use magic link. The response remains generic to prevent account discovery.
 
-Request a magic link sent to email.
-
-**Request:**
 ```json
 {
   "email": "user@example.com"
 }
 ```
 
-**Response (200):**
 ```json
 {
-  "data": {
-    "message": "Check your email for the login link"
-  }
+  "message": "If an account exists with user@example.com, a magic link has been sent."
 }
 ```
 
----
+### POST `/api/auth/magic-link/verify`
 
-### GET /api/auth/verify?token=<magic_link_token>
+Consume a magic-link token and return the same authentication response as Google login.
+Magic links are single-use and expire after 15 minutes. Requests are limited to five per email
+address in a rolling hour.
 
-Verify magic link and return JWT.
-
-**Response (200):**
 ```json
 {
-  "data": {
-    "token": "jwt_token",
-    "user": {
-      "id": "uuid",
-      "email": "user@example.com",
-      "name": "User",
-      "authProvider": "EMAIL"
-    }
-  }
+  "token": "<magic_link_token>"
 }
 ```
 
-**Error (400):**
+### POST `/api/auth/logout`
+
+Acknowledges logout. JWT removal is client-side.
+
 ```json
 {
-  "error": {
-    "code": "INVALID_TOKEN",
-    "message": "Magic link is invalid or expired"
-  }
+  "message": "Logged out successfully"
 }
 ```
 
----
+## Users
 
-### POST /api/auth/logout
+### GET `/api/users/me`
 
-Invalidate current session (client-side: clear JWT).
-
-**Response (200):**
 ```json
 {
-  "data": {
-    "message": "Logged out"
-  }
+  "id": "uuid",
+  "email": "user@example.com",
+  "name": "User Name"
 }
 ```
 
----
+### PUT `/api/users/me`
 
-## User Endpoints
-
-### GET /api/users/me
-
-Get current user profile.
-
-**Response (200):**
 ```json
 {
-  "data": {
-    "id": "uuid",
-    "email": "user@example.com",
-    "name": "John Doe",
-    "authProvider": "GOOGLE",
-    "createdAt": "2025-01-15T10:00:00Z"
-  }
+  "name": "Updated Name"
 }
 ```
 
----
+Returns the updated user object.
 
-### PUT /api/users/me
+## Relationships
 
-Update current user profile.
+### POST `/api/relationships/invite`
 
-**Request:**
-```json
-{
-  "name": "John Updated"
-}
-```
-
-**Response (200):**
-```json
-{
-  "data": {
-    "id": "uuid",
-    "email": "user@example.com",
-    "name": "John Updated",
-    "authProvider": "GOOGLE",
-    "createdAt": "2025-01-15T10:00:00Z"
-  }
-}
-```
-
----
-
-## Relationship Endpoints
-
-### POST /api/relationships/invite
-
-Generate an invite code.
-
-**Response (201):**
-```json
-{
-  "data": {
-    "id": "uuid",
-    "inviteCode": "A3F8K2",
-    "expiresAt": "2025-01-22T10:00:00Z",
-    "status": "PENDING"
-  }
-}
-```
-
----
-
-### POST /api/relationships/accept
-
-Accept an invite code and link with partner.
-
-**Request:**
 ```json
 {
   "inviteCode": "A3F8K2"
 }
 ```
 
-**Response (200):**
+### POST `/api/relationships/accept`
+
 ```json
 {
-  "data": {
+  "inviteCode": "A3F8K2"
+}
+```
+
+```json
+{
+  "message": "Invite accepted successfully"
+}
+```
+
+### GET `/api/relationships`
+
+```json
+[
+  {
     "id": "uuid",
-    "partner": {
-      "id": "uuid",
-      "name": "Partner Name",
-      "email": "partner@example.com"
-    },
-    "status": "ACTIVE",
-    "createdAt": "2025-01-15T10:00:00Z"
+    "partnerId": "uuid",
+    "partnerName": "Partner Name",
+    "partnerEmail": "partner@example.com",
+    "status": "ACCEPTED"
   }
+]
+```
+
+Pending invitations have null partner fields and status `PENDING`.
+
+## Devices
+
+Push subscription secrets are accepted during registration but are never returned by list APIs.
+
+### POST `/api/devices/register`
+
+```json
+{
+  "endpoint": "https://push-service.example/subscription",
+  "p256dh": "browser_public_key",
+  "auth": "browser_auth_secret",
+  "userAgent": "Browser user agent"
 }
 ```
 
-**Error (409):**
 ```json
 {
-  "error": {
-    "code": "ALREADY_LINKED",
-    "message": "You are already linked with a partner"
-  }
+  "message": "Subscription registered successfully"
 }
 ```
 
----
+### DELETE `/api/devices/{id}`
 
-### GET /api/relationships
+Only the owning user can remove a device.
 
-List user's relationships.
-
-**Response (200):**
 ```json
 {
-  "data": [
-    {
-      "id": "uuid",
-      "partner": {
-        "id": "uuid",
-        "name": "Partner Name",
-        "email": "partner@example.com"
-      },
-      "status": "ACTIVE",
-      "createdAt": "2025-01-15T10:00:00Z"
-    }
-  ]
+  "message": "Subscription removed"
 }
 ```
 
----
+### GET `/api/devices`
 
-## Device Endpoints
-
-### POST /api/devices
-
-Register a push subscription.
-
-**Request:**
 ```json
-{
-  "endpoint": "https://fcm.googleapis.com/...",
-  "keys": {
-    "p256dh": "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XHh2B6i_",
-    "auth": "tBHItJI5svmSD641XozNcg"
-  }
-}
-```
-
-**Response (201):**
-```json
-{
-  "data": {
+[
+  {
     "id": "uuid",
-    "createdAt": "2025-01-15T10:00:00Z"
+    "userAgent": "Browser user agent",
+    "createdAt": "2026-08-10T12:00:00Z",
+    "lastUsedAt": "2026-08-10T12:00:00Z"
   }
-}
+]
 ```
 
----
+## Notifications
 
-### DELETE /api/devices/:id
+Users may schedule reminders for themselves or an accepted linked partner. Requests are limited to
+10 reminders per sender in a rolling hour.
 
-Remove a push subscription.
+### POST `/api/notifications`
 
-**Response (200):**
 ```json
 {
-  "data": {
-    "message": "Device removed"
-  }
-}
-```
-
----
-
-### GET /api/devices
-
-List user's registered devices.
-
-**Response (200):**
-```json
-{
-  "data": [
-    {
-      "id": "uuid",
-      "createdAt": "2025-01-15T10:00:00Z"
-    }
-  ]
-}
-```
-
----
-
-## Notification Endpoints
-
-### POST /api/notifications
-
-Create a new notification.
-
-**Request:**
-```json
-{
-  "recipientId": "self | partner-uuid",
+  "recipientId": "linked-partner-uuid",
   "title": "Take out the trash",
   "body": "Don't forget!",
-  "scheduledTime": "2025-01-15T19:00:00Z"
+  "scheduledTime": "2026-08-10T19:00:00Z"
 }
 ```
 
-**Response (201):**
+`recipientId` may be omitted for a self-reminder. `body` is optional. `title` is limited to 100
+characters, `body` to 500 characters, and `scheduledTime` must be in the future.
+
+Returns a notification object:
+
 ```json
 {
-  "data": {
-    "id": "uuid",
-    "title": "Take out the trash",
-    "body": "Don't forget!",
-    "scheduledTime": "2025-01-15T19:00:00Z",
-    "status": "PENDING",
-    "createdAt": "2025-01-15T10:00:00Z"
-  }
+  "id": "uuid",
+  "senderId": "uuid",
+  "recipientId": "uuid",
+  "title": "Take out the trash",
+  "body": "Don't forget!",
+  "scheduledTime": "2026-08-10T19:00:00Z",
+  "status": "PENDING",
+  "createdAt": "2026-08-10T12:00:00Z"
 }
 ```
 
-**Error (400):**
+### GET `/api/notifications`
+
+Returns notifications scoped to the authenticated user:
+
 ```json
 {
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Scheduled time must be in the future"
-  }
+  "received": [],
+  "sent": []
 }
 ```
 
----
+### GET `/api/notifications/{id}`
 
-### GET /api/notifications
+Returns a notification only when the authenticated user is its sender or recipient. Other IDs are
+reported as not found.
 
-List notifications (sent and received).
+### DELETE `/api/notifications/{id}`
 
-**Query Parameters:**
-- `tab`: `sent` | `received` (default: both)
-- `page`: Page number (default: 1)
-- `limit`: Items per page (default: 20)
+The sender may cancel a notification while it is `PENDING`.
 
-**Response (200):**
 ```json
 {
-  "data": {
-    "notifications": [
-      {
-        "id": "uuid",
-        "title": "Take out the trash",
-        "body": "Don't forget!",
-        "scheduledTime": "2025-01-15T19:00:00Z",
-        "status": "PENDING",
-        "sender": {
-          "id": "uuid",
-          "name": "John"
-        },
-        "recipient": {
-          "id": "uuid",
-          "name": "Jane"
-        },
-        "createdAt": "2025-01-15T10:00:00Z"
-      }
-    ],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 1
-    }
-  }
+  "message": "Notification cancelled"
 }
 ```
 
----
+### POST `/api/notifications/{id}/viewed`
 
-### GET /api/notifications/:id
+The recipient may move a `SENT` or `DELIVERED` notification to `VIEWED`. Returns the updated
+notification.
 
-Get notification details.
+### POST `/api/notifications/{id}/delivered`
 
-**Response (200):**
-```json
-{
-  "data": {
-    "id": "uuid",
-    "title": "Take out the trash",
-    "body": "Don't forget!",
-    "scheduledTime": "2025-01-15T19:00:00Z",
-    "status": "DELIVERED",
-    "sender": {
-      "id": "uuid",
-      "name": "John"
-    },
-    "recipient": {
-      "id": "uuid",
-      "name": "Jane"
-    },
-    "createdAt": "2025-01-15T10:00:00Z",
-    "updatedAt": "2025-01-15T19:00:05Z"
-  }
-}
+Internal service-worker callback. It does not accept an account JWT. The push payload supplies a
+short-lived token scoped to one notification:
+
+```http
+X-PushPal-Delivery-Token: <scoped_delivery_token>
 ```
 
----
-
-### DELETE /api/notifications/:id
-
-Cancel a pending notification.
-
-**Response (200):**
-```json
-{
-  "data": {
-    "message": "Notification cancelled"
-  }
-}
-```
-
-**Error (400):**
-```json
-{
-  "error": {
-    "code": "NOT_CANCELLABLE",
-    "message": "Notification has already been sent"
-  }
-}
-```
-
----
-
-### POST /api/notifications/:id/viewed
-
-Mark a notification as viewed.
-
-**Response (200):**
-```json
-{
-  "data": {
-    "message": "Notification marked as viewed"
-  }
-}
-```
-
----
-
-## Push Subscription Endpoint
-
-### POST /api/push/subscribe
-
-Subscribe to push notifications (same as POST /api/devices).
-
-**Request:**
-```json
-{
-  "endpoint": "https://fcm.googleapis.com/...",
-  "keys": {
-    "p256dh": "BNcRdreALRFXTkOOUHK1EtK2wtaz5Ry4YfYCA_0QTpQtUbVlUls0VJXg7A8u-Ts1XHh2B6i_",
-    "auth": "tBHItJI5svmSD641XozNcg"
-  }
-}
-```
-
-**Response (201):**
-```json
-{
-  "data": {
-    "id": "uuid"
-  }
-}
-```
+Returns the updated notification. Missing, expired, or mismatched delivery tokens receive `403`.

@@ -18,9 +18,12 @@ export default function SettingsPage() {
   const [enterCode, setEnterCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [relationships, setRelationships] = useState<Relationship[]>([]);
+  const [relationshipsError, setRelationshipsError] = useState('');
 
   useEffect(() => {
-    api.getRelationships().then(setRelationships).catch(() => {});
+    api.getRelationships().then(setRelationships).catch((err: unknown) => {
+      setRelationshipsError(err instanceof Error ? err.message : 'Unable to load linked partners');
+    });
   }, []);
 
   const handleGenerateInvite = async () => {
@@ -44,6 +47,7 @@ export default function SettingsPage() {
       setEnterCode('');
       const rels = await api.getRelationships();
       setRelationships(rels);
+      setRelationshipsError('');
     } catch (err) {
       addToast(err instanceof Error ? err.message : 'Invalid code', 'error');
     } finally {
@@ -71,7 +75,9 @@ export default function SettingsPage() {
       {/* Partner */}
       <Card>
         <h2 className="mb-2 font-semibold text-gray-900">Linked Partner</h2>
-        {relationships.length === 0 ? (
+        {relationshipsError ? (
+          <p className="text-sm text-red-600">{relationshipsError}</p>
+        ) : relationships.length === 0 ? (
           <p className="text-sm text-gray-500">No partner linked yet.</p>
         ) : (
           relationships.map((r) => (
@@ -104,7 +110,8 @@ export default function SettingsPage() {
           <Input
             placeholder="Enter partner's invite code"
             value={enterCode}
-            onChange={(e) => setEnterCode(e.target.value)}
+            onChange={(e) => setEnterCode(e.target.value.toUpperCase())}
+            maxLength={6}
           />
           <Button onClick={handleAcceptInvite} disabled={loading || !enterCode.trim()}>
             Link

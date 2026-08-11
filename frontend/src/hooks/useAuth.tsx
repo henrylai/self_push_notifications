@@ -2,7 +2,14 @@
 
 import { useState, useCallback, useEffect, createContext, useContext, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken, setToken, removeToken, getStoredUser, setStoredUser } from '@/lib/auth';
+import {
+  getToken,
+  setToken,
+  removeToken,
+  getStoredUser,
+  setStoredUser,
+  removeStoredUser,
+} from '@/lib/auth';
 import type { User } from '@/types';
 
 interface AuthContextValue {
@@ -38,10 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     removeToken();
-    localStorage.removeItem('user');
+    removeStoredUser();
     setAuthToken(null);
     setUser(null);
-    router.push('/login');
+    router.replace('/login');
   }, [router]);
 
   return (

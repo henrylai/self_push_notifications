@@ -10,6 +10,7 @@ import Button from '@/components/ui/button';
 import { PlusCircle, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Notification } from '@/types';
+import { useToast } from '@/components/ui/toast';
 
 export default function DashboardPage() {
   return (
@@ -23,9 +24,10 @@ export default function DashboardPage() {
 
 function DashboardContent() {
   const router = useRouter();
+  const { addToast } = useToast();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<'sent' | 'received'>('sent');
-  const { data: notifications, isLoading, refetch } = useQuery<{
+  const { data: notifications, isLoading, isError, error, refetch } = useQuery<{
     received: Notification[];
     sent: Notification[];
   }>({
@@ -42,17 +44,15 @@ function DashboardContent() {
 
   useEffect(() => {
     if (!viewedId) return;
-    api.markViewed(viewedId).catch(() => {});
+    api.markViewed(viewedId).catch((markError: unknown) => {
+      addToast(markError instanceof Error ? markError.message : 'Unable to update reminder', 'error');
+    });
     const url = new URL(window.location.href);
     url.searchParams.delete('viewed');
     router.replace(url.pathname + url.search);
-  }, [viewedId, router]);
+  }, [addToast, viewedId, router]);
 
-  const filtered = notifications
-    ? [...notifications.sent, ...notifications.received].filter((n) =>
-        tab === 'sent' ? n.senderId === user?.id : n.recipientId === user?.id
-      )
-    : undefined;
+  const filtered = notifications?.[tab];
 
   return (
     <div className="flex flex-col gap-4">
@@ -75,6 +75,15 @@ function DashboardContent() {
       {/* Content */}
       {isLoading ? (
         <div className="py-12 text-center text-sm text-gray-500">Loading...</div>
+      ) : isError ? (
+        <div className="flex flex-col items-center gap-3 py-12 text-center">
+          <p className="text-sm text-red-600">
+            {error instanceof Error ? error.message : 'Unable to load reminders'}
+          </p>
+          <Button variant="secondary" onClick={() => refetch()}>
+            Try again
+          </Button>
+        </div>
       ) : !filtered || filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <Inbox className="h-12 w-12 text-gray-300" />
@@ -92,7 +101,7 @@ function DashboardContent() {
             <NotificationCard
               key={n.id}
               notification={n}
-              currentUserId={user?.id}
+              currentUserId={user?.id ?? ''}
               onCancel={() => refetch()}
             />
           ))}

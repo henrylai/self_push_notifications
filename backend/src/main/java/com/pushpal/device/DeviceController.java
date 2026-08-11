@@ -1,10 +1,17 @@
 package com.pushpal.device;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
@@ -20,14 +27,14 @@ public class DeviceController {
     @PostMapping("/register")
     public ResponseEntity<Map<String, String>> registerSubscription(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody Map<String, String> request) {
+            @Valid @RequestBody RegisterDeviceRequest request) {
         UUID userId = UUID.fromString(userDetails.getUsername());
         deviceService.registerSubscription(
                 userId,
-                request.get("endpoint"),
-                request.get("p256dh"),
-                request.get("auth"),
-                request.get("userAgent"));
+                request.endpoint(),
+                request.p256dh(),
+                request.authKey(),
+                request.userAgent());
         return ResponseEntity.ok(Map.of("message", "Subscription registered successfully"));
     }
 
@@ -35,14 +42,18 @@ public class DeviceController {
     public ResponseEntity<Map<String, String>> removeSubscription(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable UUID id) {
-        deviceService.removeSubscription(id);
+        UUID userId = UUID.fromString(userDetails.getUsername());
+        deviceService.removeSubscription(id, userId);
         return ResponseEntity.ok(Map.of("message", "Subscription removed"));
     }
 
     @GetMapping
-    public ResponseEntity<List<PushSubscription>> listDevices(
+    public ResponseEntity<List<DeviceDto>> listDevices(
             @AuthenticationPrincipal UserDetails userDetails) {
         UUID userId = UUID.fromString(userDetails.getUsername());
-        return ResponseEntity.ok(deviceService.getUserSubscriptions(userId));
+        List<DeviceDto> devices = deviceService.getUserSubscriptions(userId).stream()
+                .map(DeviceDto::fromEntity)
+                .toList();
+        return ResponseEntity.ok(devices);
     }
 }

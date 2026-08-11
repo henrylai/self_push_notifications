@@ -51,9 +51,10 @@ cd backend
 # Generate Gradle wrapper (if not present)
 gradle wrapper
 
-# Run the application
-./gradlew bootRun
+# Run the application with safe local development defaults
+SPRING_PROFILES_ACTIVE=dev ./gradlew bootRun
 # On Windows:
+set SPRING_PROFILES_ACTIVE=dev
 gradlew.bat bootRun
 ```
 
@@ -82,7 +83,7 @@ Copy `.env.example` files and fill in:
 - `GOOGLE_CLIENT_ID` — Google OAuth client ID
 - `GOOGLE_CLIENT_SECRET` — Google OAuth client secret
 - `MAGIC_LINK_BASE_URL` — Frontend origin used in magic links (e.g. `https://pushpal.up.railway.app`)
-- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` / `SMTP_USERNAME`, `SMTP_PASS` / `SMTP_PASSWORD`, `MAIL_FROM` — Email for magic links (optional; magic links are logged to console when SMTP is not set). `MAIL_FROM` defaults to `SMTP_USER` for Gmail compatibility.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` / `SMTP_USERNAME`, `SMTP_PASS` / `SMTP_PASSWORD`, `MAIL_FROM` — Email for magic links. Links are never written to logs; configure SMTP to use email authentication. `MAIL_FROM` defaults to `SMTP_USER` for Gmail compatibility.
 
 **Frontend**:
 - `NEXT_PUBLIC_API_URL` — Backend URL (default: `http://localhost:8080`)

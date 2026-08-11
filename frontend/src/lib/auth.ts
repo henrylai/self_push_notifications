@@ -11,6 +11,10 @@ export function removeToken(): void {
   localStorage.removeItem('token');
 }
 
+export function removeStoredUser(): void {
+  localStorage.removeItem('user');
+}
+
 export function isAuthenticated(): boolean {
   return getToken() !== null;
 }

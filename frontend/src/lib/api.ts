@@ -1,4 +1,13 @@
-import type { AuthResponse, Notification, Relationship } from '@/types';
+import type {
+  AuthResponse,
+  CreateNotificationInput,
+  Device,
+  MessageResponse,
+  Notification,
+  RegisterDeviceInput,
+  Relationship,
+  User,
+} from '@/types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -13,18 +22,29 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
   const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(error.message || `HTTP ${response.status}`);
+    const error: unknown = await response.json().catch(() => null);
+    const message =
+      typeof error === 'object' && error !== null && 'message' in error
+        ? String(error.message)
+        : `Request failed (HTTP ${response.status})`;
+    throw new Error(message);
   }
-  return response.json();
+  if (response.status === 204) return undefined as T;
+  return response.json() as Promise<T>;
 }
 
 export const api = {
   // Auth
   requestMagicLink: (email: string) =>
-    request('/api/auth/magic-link', { method: 'POST', body: JSON.stringify({ email }) }),
+    request<MessageResponse>('/api/auth/magic-link', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
   verifyMagicLink: (token: string) =>
-    request<AuthResponse>(`/api/auth/magic-link/verify?token=${token}`),
+    request<AuthResponse>('/api/auth/magic-link/verify', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }),
   googleLogin: (code: string, redirectUri: string) =>
     request<AuthResponse>('/api/auth/google', {
       method: 'POST',
@@ -32,34 +52,41 @@ export const api = {
     }),
 
   // User
-  getMe: () => request<any>('/api/users/me'),
+  getMe: () => request<User>('/api/users/me'),
   updateMe: (data: { name: string }) =>
-    request<any>('/api/users/me', { method: 'PUT', body: JSON.stringify(data) }),
+    request<User>('/api/users/me', { method: 'PUT', body: JSON.stringify(data) }),
 
   // Relationships
   createInvite: () =>
     request<{ inviteCode: string }>('/api/relationships/invite', { method: 'POST' }),
   acceptInvite: (inviteCode: string) =>
-    request<any>('/api/relationships/accept', { method: 'POST', body: JSON.stringify({ inviteCode }) }),
+    request<MessageResponse>('/api/relationships/accept', {
+      method: 'POST',
+      body: JSON.stringify({ inviteCode }),
+    }),
   getRelationships: () => request<Relationship[]>('/api/relationships'),
 
   // Devices
-  registerDevice: (subscription: any) =>
-    request<any>('/api/devices/register', { method: 'POST', body: JSON.stringify(subscription) }),
+  registerDevice: (subscription: RegisterDeviceInput) =>
+    request<MessageResponse>('/api/devices/register', {
+      method: 'POST',
+      body: JSON.stringify(subscription),
+    }),
   removeDevice: (id: string) =>
-    request<void>(`/api/devices/${id}`, { method: 'DELETE' }),
-  getDevices: () => request<any[]>('/api/devices'),
+    request<MessageResponse>(`/api/devices/${id}`, { method: 'DELETE' }),
+  getDevices: () => request<Device[]>('/api/devices'),
 
   // Notifications
-  createNotification: (data: any) =>
-    request<any>('/api/notifications', { method: 'POST', body: JSON.stringify(data) }),
+  createNotification: (data: CreateNotificationInput) =>
+    request<Notification>('/api/notifications', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
   getNotifications: () =>
     request<{ received: Notification[]; sent: Notification[] }>('/api/notifications'),
-  getNotification: (id: string) => request<any>(`/api/notifications/${id}`),
+  getNotification: (id: string) => request<Notification>(`/api/notifications/${id}`),
   cancelNotification: (id: string) =>
-    request<void>(`/api/notifications/${id}`, { method: 'DELETE' }),
+    request<MessageResponse>(`/api/notifications/${id}`, { method: 'DELETE' }),
   markViewed: (id: string) =>
-    request<any>(`/api/notifications/${id}/viewed`, { method: 'POST' }),
-  markDelivered: (id: string) =>
-    request<any>(`/api/notifications/${id}/delivered`, { method: 'POST' }),
+    request<Notification>(`/api/notifications/${id}/viewed`, { method: 'POST' }),
 };

@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
-import { setToken, setStoredUser } from '@/lib/auth';
+import { useAuth } from '@/hooks/useAuth';
 import { Loader2 } from 'lucide-react';
 
 export default function AuthCallbackPage() {
@@ -17,6 +17,7 @@ export default function AuthCallbackPage() {
 function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { login } = useAuth();
   const [error, setError] = useState('');
   const handled = useRef(false);
 
@@ -26,9 +27,19 @@ function AuthCallbackContent() {
 
     const token = searchParams.get('token');
     const code = searchParams.get('code');
+    const state = searchParams.get('state');
+    const oauthError = searchParams.get('error_description') || searchParams.get('error');
+
+    window.history.replaceState(null, '', '/auth/callback');
+
+    if (oauthError) {
+      sessionStorage.removeItem('pushpal_oauth_state');
+      setError(oauthError);
+      return;
+    }
 
     if (!token && !code) {
-      setError('No token found in URL');
+      setError('No sign-in credentials were provided');
       return;
     }
 
@@ -36,8 +47,7 @@ function AuthCallbackContent() {
       api
         .verifyMagicLink(token)
         .then((res) => {
-          setToken(res.token);
-          setStoredUser(res.user);
+          login(res.token, res.user);
           router.replace('/dashboard');
         })
         .catch(() => {
@@ -46,18 +56,24 @@ function AuthCallbackContent() {
       return;
     }
 
+    const expectedState = sessionStorage.getItem('pushpal_oauth_state');
+    sessionStorage.removeItem('pushpal_oauth_state');
+    if (!state || !expectedState || state !== expectedState) {
+      setError('Google sign-in could not be verified. Please try again.');
+      return;
+    }
+
     const redirectUri = `${window.location.origin}/auth/callback`;
     api
       .googleLogin(code!, redirectUri)
       .then((res) => {
-        setToken(res.token);
-        setStoredUser(res.user);
+        login(res.token, res.user);
         router.replace('/dashboard');
       })
       .catch((err: unknown) => {
         setError(err instanceof Error ? err.message : 'Google sign-in failed');
       });
-  }, [searchParams, router]);
+  }, [login, searchParams, router]);
 
   if (error) {
     return (

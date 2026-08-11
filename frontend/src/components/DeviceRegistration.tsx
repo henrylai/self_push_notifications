@@ -6,11 +6,14 @@ import Card from '@/components/ui/card';
 import { usePush } from '@/hooks/usePush';
 import { api } from '@/lib/api';
 import type { Device } from '@/types';
+import { useToast } from '@/components/ui/toast';
 
 export default function DeviceRegistration() {
   const { permission, loading, error, register } = usePush();
   const [devices, setDevices] = useState<Device[]>([]);
   const [loadingDevices, setLoadingDevices] = useState(true);
+  const [devicesError, setDevicesError] = useState('');
+  const { addToast } = useToast();
 
   useEffect(() => {
     loadDevices();
@@ -20,24 +23,28 @@ export default function DeviceRegistration() {
     try {
       const data = await api.getDevices();
       setDevices(data);
-    } catch {
-      // silently fail
+      setDevicesError('');
+    } catch (err) {
+      setDevicesError(err instanceof Error ? err.message : 'Unable to load devices');
     } finally {
       setLoadingDevices(false);
     }
   };
 
   const handleRegister = async () => {
-    await register();
-    await loadDevices();
+    if (await register()) {
+      addToast('Device registered');
+      await loadDevices();
+    }
   };
 
   const handleRemove = async (id: string) => {
     try {
       await api.removeDevice(id);
       setDevices((prev) => prev.filter((d) => d.id !== id));
-    } catch {
-      // silently fail
+      addToast('Device removed');
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Unable to remove device', 'error');
     }
   };
 
@@ -69,6 +76,11 @@ export default function DeviceRegistration() {
         <h3 className="mb-2 text-lg font-semibold text-gray-900">Registered Devices</h3>
         {loadingDevices ? (
           <p className="text-sm text-gray-500">Loading...</p>
+        ) : devicesError ? (
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-red-600">{devicesError}</p>
+            <Button variant="secondary" size="sm" onClick={loadDevices}>Retry</Button>
+          </div>
         ) : devices.length === 0 ? (
           <p className="text-sm text-gray-500">No devices registered.</p>
         ) : (
@@ -76,7 +88,9 @@ export default function DeviceRegistration() {
             {devices.map((device) => (
               <Card key={device.id} className="flex items-center justify-between">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-900">{device.userAgent}</p>
+                  <p className="truncate text-sm font-medium text-gray-900">
+                    {device.userAgent || 'Unknown browser'}
+                  </p>
                   <p className="text-xs text-gray-500">
                     Added {new Date(device.createdAt).toLocaleDateString()}
                   </p>

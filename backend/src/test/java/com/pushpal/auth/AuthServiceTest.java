@@ -1,5 +1,6 @@
 package com.pushpal.auth;
 
+import com.pushpal.common.RateLimitExceededException;
 import com.pushpal.user.User;
 import com.pushpal.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +49,7 @@ class AuthServiceTest {
     void setUp() {
         authService = new AuthService(
                 userRepository, magicLinkTokenRepository, jwtTokenProvider, emailService, googleOAuthService);
-        ReflectionTestUtils.setField(authService, "magicLinkExpirationMinutes", 43200L);
+        ReflectionTestUtils.setField(authService, "magicLinkExpirationMinutes", 15L);
         ReflectionTestUtils.setField(authService, "magicLinkBaseUrl", "https://pushpal.up.railway.app");
     }
 
@@ -90,12 +91,23 @@ class AuthServiceTest {
     }
 
     @Test
+    void requestMagicLinkIsRateLimitedPerEmail() {
+        when(magicLinkTokenRepository.countByEmailAndCreatedAtAfter(
+                eq("user@example.com"), any(Instant.class))).thenReturn(5L);
+
+        assertThatThrownBy(() -> authService.requestMagicLink("user@example.com"))
+                .isInstanceOf(RateLimitExceededException.class)
+                .hasMessageContaining("Too many sign-in links");
+    }
+
+    @Test
     void verifyMagicLinkCreatesUserAndMarksTokenUsed() {
         User user = newUser("user@example.com", "user");
         String token = "valid-token";
         MagicLinkToken stored = newToken("user@example.com", token, Instant.now().plusSeconds(900));
 
-        when(magicLinkTokenRepository.findByTokenHash(sha256(token))).thenReturn(Optional.of(stored));
+        when(magicLinkTokenRepository.findByTokenHashForUpdate(sha256(token)))
+                .thenReturn(Optional.of(stored));
         when(userRepository.findByEmail("user@example.com")).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenReturn(user);
         when(jwtTokenProvider.generateToken(user)).thenReturn("jwt-token");
@@ -105,12 +117,11 @@ class AuthServiceTest {
         assertThat(response.token()).isEqualTo("jwt-token");
         assertThat(response.user().email()).isEqualTo("user@example.com");
         assertThat(stored.getUsedAt()).isNotNull();
-        verify(magicLinkTokenRepository).save(stored);
     }
 
     @Test
     void verifyMagicLinkRejectsUnknownToken() {
-        when(magicLinkTokenRepository.findByTokenHash(any())).thenReturn(Optional.empty());
+        when(magicLinkTokenRepository.findByTokenHashForUpdate(any())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.verifyMagicLink("unknown"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -121,7 +132,7 @@ class AuthServiceTest {
     void verifyMagicLinkRejectsUsedToken() {
         MagicLinkToken stored = newToken("user@example.com", "used-token", Instant.now().plusSeconds(900));
         stored.setUsedAt(Instant.now().minusSeconds(60));
-        when(magicLinkTokenRepository.findByTokenHash(sha256("used-token")))
+        when(magicLinkTokenRepository.findByTokenHashForUpdate(sha256("used-token")))
                 .thenReturn(Optional.of(stored));
 
         assertThatThrownBy(() -> authService.verifyMagicLink("used-token"))
@@ -132,7 +143,7 @@ class AuthServiceTest {
     @Test
     void verifyMagicLinkRejectsExpiredToken() {
         MagicLinkToken stored = newToken("user@example.com", "expired-token", Instant.now().minusSeconds(60));
-        when(magicLinkTokenRepository.findByTokenHash(sha256("expired-token")))
+        when(magicLinkTokenRepository.findByTokenHashForUpdate(sha256("expired-token")))
                 .thenReturn(Optional.of(stored));
 
         assertThatThrownBy(() -> authService.verifyMagicLink("expired-token"))
@@ -154,7 +165,8 @@ class AuthServiceTest {
     void googleLoginCreatesUserAndReturnsJwt() {
         User user = newUser("user@gmail.com", "John Doe");
         when(googleOAuthService.getUserInfo("code", "https://app/auth/callback"))
-                .thenReturn(new GoogleOAuthService.GoogleUserInfo("user@gmail.com", "John Doe", null));
+                .thenReturn(new GoogleOAuthService.GoogleUserInfo(
+                        "google-id", "user@gmail.com", "John Doe", null));
         when(userRepository.findByEmail("user@gmail.com")).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenReturn(user);
         when(jwtTokenProvider.generateToken(user)).thenReturn("jwt-token");

@@ -19,12 +19,19 @@ export default function CreateNotificationForm() {
   const [scheduledTime, setScheduledTime] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [relationshipsError, setRelationshipsError] = useState('');
 
   useEffect(() => {
-    api.getRelationships().then(setRelationships).catch(() => {});
+    api.getRelationships().then(setRelationships).catch((err: unknown) => {
+      setRelationshipsError(err instanceof Error ? err.message : 'Unable to load linked partners');
+    });
   }, []);
 
   const linkedPartner = relationships.find((r) => r.status === 'ACCEPTED' && r.partnerId);
+  const earliestSchedule = new Date(Date.now() + 60_000);
+  earliestSchedule.setMinutes(
+    earliestSchedule.getMinutes() - earliestSchedule.getTimezoneOffset()
+  );
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -32,7 +39,7 @@ export default function CreateNotificationForm() {
     setSubmitting(true);
 
     const recipientId =
-      recipient === 'partner' && linkedPartner ? linkedPartner.partnerId : undefined;
+      recipient === 'partner' && linkedPartner ? linkedPartner.partnerId ?? undefined : undefined;
 
     try {
       await api.createNotification({
@@ -86,12 +93,14 @@ export default function CreateNotificationForm() {
             Link a partner in Settings to send reminders to them.
           </p>
         )}
+        {relationshipsError && <p className="mt-1 text-xs text-red-600">{relationshipsError}</p>}
       </div>
       <Input
         label="Date & Time"
         type="datetime-local"
         value={scheduledTime}
         onChange={(e) => setScheduledTime(e.target.value)}
+        min={earliestSchedule.toISOString().slice(0, 16)}
         required
       />
       {error && <p className="text-sm text-red-600">{error}</p>}

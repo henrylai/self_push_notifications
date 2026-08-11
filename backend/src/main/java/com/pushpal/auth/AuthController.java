@@ -1,6 +1,7 @@
 package com.pushpal.auth;
 
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,29 +15,23 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/magic-link")
-    public ResponseEntity<Map<String, String>> requestMagicLink(@RequestBody Map<String, String> request) {
-        String email = request.get("email");
-        if (email == null || email.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Email is required"));
-        }
-        String message = authService.requestMagicLink(email);
+    public ResponseEntity<Map<String, String>> requestMagicLink(
+            @Valid @RequestBody MagicLinkRequest request) {
+        String message = authService.requestMagicLink(request.email());
         return ResponseEntity.ok(Map.of("message", message));
     }
 
-    @GetMapping("/magic-link/verify")
-    public ResponseEntity<AuthResponse> verifyMagicLink(@RequestParam String token) {
-        AuthResponse response = authService.verifyMagicLink(token);
+    @PostMapping("/magic-link/verify")
+    public ResponseEntity<AuthResponse> verifyMagicLink(
+            @Valid @RequestBody MagicLinkVerifyRequest request) {
+        AuthResponse response = authService.verifyMagicLink(request.token());
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/google")
-    public ResponseEntity<AuthResponse> googleLogin(@RequestBody Map<String, String> request) {
-        String code = request.get("code");
-        String redirectUri = request.get("redirectUri");
-        if (code == null || code.isBlank() || redirectUri == null || redirectUri.isBlank()) {
-            return ResponseEntity.badRequest().build();
-        }
-        AuthResponse response = authService.googleLogin(code, redirectUri);
+    public ResponseEntity<AuthResponse> googleLogin(
+            @Valid @RequestBody GoogleLoginRequest request) {
+        AuthResponse response = authService.googleLogin(request.code(), request.redirectUri());
         return ResponseEntity.ok(response);
     }
 

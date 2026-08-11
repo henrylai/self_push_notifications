@@ -8,21 +8,27 @@ import { Bell } from 'lucide-react';
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleGoogleLogin = () => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (!clientId) {
-      alert('Google login is not configured yet. Please use email magic link.');
+      setError('Google login is not configured yet. Please use email magic link.');
       return;
     }
+    setError('');
     setLoading(true);
     const redirectUri = `${window.location.origin}/auth/callback`;
+    const stateBytes = crypto.getRandomValues(new Uint8Array(32));
+    const state = Array.from(stateBytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    sessionStorage.setItem('pushpal_oauth_state', state);
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: 'openid email profile',
       prompt: 'select_account',
+      state,
     });
     window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
   };
@@ -41,6 +47,7 @@ export default function LoginPage() {
         </div>
 
         <div className="flex flex-col gap-3">
+          {error && <p role="alert" className="text-center text-sm text-red-600">{error}</p>}
           <Button
             variant="secondary"
             size="lg"

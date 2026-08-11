@@ -40,7 +40,7 @@ All three services live in the same Railway project (private networking between 
 | Start | `serve -s out -l tcp://0.0.0.0:${PORT:-3000}` |
 | Port | Railway `PORT` env var (defaults to 3000) |
 | Health check | `/` |
-| Build args | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` |
+| Build args | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID` |
 
 ---
 
@@ -75,8 +75,10 @@ COPY . .
 
 ARG NEXT_PUBLIC_API_URL
 ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
-    NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY \
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
 
 RUN npm run build
 
@@ -152,9 +154,12 @@ Flow: FE redirects to Google → Google calls back with `?code=` → FE posts `{
 
 ## Magic Link Emails (optional)
 
-Without SMTP credentials, magic links are logged to the API console (e.g. `SMTP not configured — magic link for user@example.com: https://pushpal.up.railway.app/auth/callback?token=...`) so you can still sign in via the Railway logs.
+Raw magic-link tokens are never logged. Without SMTP credentials, the request returns its generic
+success response but no email is sent; Google OAuth remains available.
 
-To send real emails, set `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USERNAME`, `SMTP_PASSWORD`, and optionally `MAIL_FROM` on `pushpal-api`. Magic-link tokens are 64-char, SHA-256-hashed, single-use, and expire after 30 days.
+To enable email login, set `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USERNAME`, `SMTP_PASSWORD`, and
+optionally `MAIL_FROM` on `pushpal-api`. Magic-link tokens are 64-char, SHA-256-hashed, single-use,
+and expire after 15 minutes. Requests are limited to five per email address per hour.
 
 ---
 

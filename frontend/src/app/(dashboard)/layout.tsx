@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { isAuthenticated, getToken, removeToken } from '@/lib/auth';
+import { isAuthenticated } from '@/lib/auth';
 import { api } from '@/lib/api';
+import { useAuth } from '@/hooks/useAuth';
 import { Bell, LayoutDashboard, PlusCircle, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -17,6 +18,7 @@ const navItems = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { logout } = useAuth();
   const [userName, setUserName] = useState('');
 
   useEffect(() => {
@@ -25,14 +27,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return;
     }
     api.getMe().then((user) => setUserName(user.name)).catch(() => {
-      removeToken();
-      router.replace('/login');
+      logout();
     });
-  }, [router]);
+  }, [logout, router]);
 
   const handleLogout = () => {
-    removeToken();
-    router.replace('/login');
+    logout();
   };
 
   return (

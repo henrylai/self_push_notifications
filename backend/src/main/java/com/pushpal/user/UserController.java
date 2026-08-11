@@ -1,12 +1,12 @@
 package com.pushpal.user;
 
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -27,9 +27,9 @@ public class UserController {
     @PutMapping("/me")
     public ResponseEntity<UserDto> updateCurrentUser(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestBody Map<String, String> request) {
+            @Valid @RequestBody UpdateUserRequest request) {
         UUID userId = UUID.fromString(userDetails.getUsername());
-        User user = userService.updateUser(userId, request.get("name"));
+        User user = userService.updateUser(userId, request.name().trim());
         return ResponseEntity.ok(UserDto.fromEntity(user));
     }
 }

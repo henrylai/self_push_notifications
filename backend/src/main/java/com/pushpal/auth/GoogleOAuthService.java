@@ -101,11 +101,13 @@ public class GoogleOAuthService {
 
             JsonNode json = objectMapper.readTree(response.body());
             String email = json.path("email").asText(null);
-            if (email == null) {
+            boolean emailVerified = json.path("verified_email").asBoolean(false);
+            String id = json.path("id").asText(null);
+            if (email == null || !emailVerified || id == null) {
                 throw new IllegalStateException("Google account has no verified email");
             }
             String name = json.path("name").asText(email.split("@")[0]);
-            return new GoogleUserInfo(email, name, json.path("picture").asText(null));
+            return new GoogleUserInfo(id, email, name, json.path("picture").asText(null));
         } catch (IllegalStateException e) {
             throw e;
         } catch (Exception e) {
@@ -114,5 +116,5 @@ public class GoogleOAuthService {
         }
     }
 
-    public record GoogleUserInfo(String email, String name, String picture) {}
+    public record GoogleUserInfo(String id, String email, String name, String picture) {}
 }

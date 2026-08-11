@@ -20,6 +20,8 @@ export default function NotificationCard({ notification, currentUserId, onCancel
   const { addToast } = useToast();
 
   const isSender = notification.senderId === currentUserId;
+  const isSelfReminder = notification.recipientId === currentUserId
+    && notification.senderId === currentUserId;
   const canCancel = notification.status === 'PENDING' && isSender;
 
   const handleCancel = async () => {
@@ -46,7 +48,9 @@ export default function NotificationCard({ notification, currentUserId, onCancel
       )}
       <div className="flex items-center justify-between text-xs text-gray-500">
         <span>
-          {isSender
+          {isSelfReminder
+            ? 'For: Me'
+            : isSender
             ? `To: ${notification.recipientName || 'Partner'}`
             : `From: ${notification.senderName || 'Partner'}`}
         </span>
