@@ -42,6 +42,9 @@ All three services live in the same Railway project (private networking between 
 | Health check | `/` |
 | Build args | `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `NEXT_PUBLIC_GOOGLE_CLIENT_ID` |
 
+The Next.js export uses trailing-slash directories (for example, `/login/index.html`) so the static
+server resolves application routes before its single-page fallback.
+
 ---
 
 ## Dockerfiles
