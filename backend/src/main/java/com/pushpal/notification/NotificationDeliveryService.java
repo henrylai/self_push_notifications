@@ -77,6 +77,7 @@ public class NotificationDeliveryService {
     private Map<String, String> buildPayloadData(Notification notification) {
         Map<String, String> data = new HashMap<>();
         data.put("notificationId", notification.getId().toString());
+        data.put("icon", notification.getIcon().apiValue());
         if (apiBaseUrl == null || apiBaseUrl.isBlank()) {
             return data;
         }

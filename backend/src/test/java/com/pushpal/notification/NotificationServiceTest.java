@@ -41,7 +41,7 @@ class NotificationServiceTest {
     void createsSelfNotificationWithOptionalBody() {
         UUID senderId = UUID.randomUUID();
         CreateNotificationRequest request = new CreateNotificationRequest(
-                "  Check the oven  ", null, null, Instant.now().plusSeconds(300));
+                "  Check the oven  ", null, null, null, Instant.now().plusSeconds(300));
         when(notificationRepository.save(any(Notification.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -51,6 +51,20 @@ class NotificationServiceTest {
         assertThat(result.getRecipientId()).isEqualTo(senderId);
         assertThat(result.getTitle()).isEqualTo("Check the oven");
         assertThat(result.getBody()).isNull();
+        assertThat(result.getIcon()).isEqualTo(NotificationIcon.BELL);
+    }
+
+    @Test
+    void storesTheSelectedNotificationIcon() {
+        UUID senderId = UUID.randomUUID();
+        CreateNotificationRequest request = new CreateNotificationRequest(
+                "Celebrate", "", "gift", null, Instant.now().plusSeconds(300));
+        when(notificationRepository.save(any(Notification.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Notification result = notificationService.createNotification(senderId, request);
+
+        assertThat(result.getIcon()).isEqualTo(NotificationIcon.GIFT);
     }
 
     @Test
@@ -156,7 +170,7 @@ class NotificationServiceTest {
 
     private CreateNotificationRequest validRequest(UUID recipientId) {
         return new CreateNotificationRequest(
-                "Reminder", "Details", recipientId, Instant.now().plusSeconds(300));
+                "Reminder", "Details", "heart", recipientId, Instant.now().plusSeconds(300));
     }
 
     private Notification notification(NotificationStatus status, UUID senderId, UUID recipientId) {

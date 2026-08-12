@@ -75,6 +75,7 @@ class NotificationDeliveryServiceTest {
         assertThat(payload.body()).isNull();
         assertThat(payload.data())
                 .containsEntry("deliveryToken", "delivery-token")
+                .containsEntry("icon", "bell")
                 .doesNotContainKey("token");
         verify(notificationService).markAsSent(notification.getId());
     }

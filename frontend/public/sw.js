@@ -53,7 +53,7 @@ self.addEventListener('push', (event) => {
   const payload = data.data || {};
   const options = {
     body: data.body || '',
-    icon: '/icons/icon-192.png',
+    icon: notificationIconUrl(payload.icon),
     badge: '/icons/icon-192.png',
     data: { notificationId: payload.notificationId },
     tag: payload.notificationId,
@@ -65,6 +65,13 @@ self.addEventListener('push', (event) => {
     ])
   );
 });
+
+function notificationIconUrl(icon) {
+  const supportedIcons = ['bell', 'heart', 'star', 'check', 'calendar', 'gift'];
+  return supportedIcons.includes(icon)
+    ? `/icons/notifications/${icon}.svg`
+    : '/icons/notifications/bell.svg';
+}
 
 async function reportDelivered(payload) {
   if (!payload.apiUrl || !payload.deliveryToken || !payload.notificationId) return;

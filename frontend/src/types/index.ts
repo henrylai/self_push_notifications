@@ -12,6 +12,7 @@ export interface Notification {
   recipientName?: string;
   title: string;
   body: string | null;
+  icon: NotificationIcon;
   scheduledTime: string;
   status: NotificationStatus;
   createdAt: string;
@@ -20,6 +21,8 @@ export interface Notification {
   viewedAt: string | null;
   failureReason: string | null;
 }
+
+export type NotificationIcon = 'bell' | 'heart' | 'star' | 'check' | 'calendar' | 'gift';
 
 export type NotificationStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'VIEWED' | 'FAILED' | 'CANCELLED';
 
@@ -59,6 +62,7 @@ export interface RegisterDeviceInput {
 export interface CreateNotificationInput {
   title: string;
   body?: string;
+  icon?: NotificationIcon;
   recipientId?: string;
   scheduledTime: string;
 }

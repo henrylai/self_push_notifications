@@ -51,6 +51,7 @@ public class NotificationService {
         notification.setRecipientId(recipientId);
         notification.setTitle(request.title().trim());
         notification.setBody(request.body());
+        notification.setIcon(NotificationIcon.fromApiValue(request.icon()));
         notification.setScheduledTime(request.scheduledTime());
         notification.setStatus(NotificationStatus.PENDING);
         return notificationRepository.save(notification);

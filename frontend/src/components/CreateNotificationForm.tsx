@@ -5,10 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import Input from '@/components/ui/input';
 import Textarea from '@/components/ui/textarea';
+import NotificationIconPicker from '@/components/NotificationIconPicker';
 import Button from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
-import type { Notification, Relationship } from '@/types';
+import type { Notification, NotificationIcon, Relationship } from '@/types';
 
 export default function CreateNotificationForm() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function CreateNotificationForm() {
   const [relationships, setRelationships] = useState<Relationship[]>([]);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
+  const [icon, setIcon] = useState<NotificationIcon>('bell');
   const [recipient, setRecipient] = useState('me');
   const [scheduledTime, setScheduledTime] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -48,6 +50,7 @@ export default function CreateNotificationForm() {
       const notification = await api.createNotification({
         title,
         body: body || undefined,
+        icon,
         recipientId,
         scheduledTime: new Date(scheduledTime).toISOString(),
       });
@@ -83,6 +86,7 @@ export default function CreateNotificationForm() {
         onChange={(e) => setBody(e.target.value)}
         rows={3}
       />
+      <NotificationIconPicker value={icon} onChange={setIcon} />
       <div className="w-full">
         <label htmlFor="recipient" className="mb-1 block text-sm font-medium text-gray-700">
           Recipient

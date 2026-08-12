@@ -217,12 +217,15 @@ Users may schedule reminders for themselves or any accepted linked Pal. Requests
   "recipientId": "linked-pal-uuid",
   "title": "Take out the trash",
   "body": "Don't forget!",
+  "icon": "calendar",
   "scheduledTime": "2026-08-10T19:00:00Z"
 }
 ```
 
 `recipientId` may be omitted for a self-reminder. `body` is optional. `title` is limited to 100
-characters, `body` to 500 characters, and `scheduledTime` must be in the future.
+characters, `body` to 500 characters, and `scheduledTime` must be in the future. `icon` is
+optional and defaults to `bell`; supported values are `bell`, `heart`, `star`, `check`,
+`calendar`, and `gift`.
 
 Returns a notification object:
 
@@ -233,6 +236,7 @@ Returns a notification object:
   "recipientId": "uuid",
   "title": "Take out the trash",
   "body": "Don't forget!",
+  "icon": "calendar",
   "scheduledTime": "2026-08-10T19:00:00Z",
   "status": "PENDING",
   "createdAt": "2026-08-10T12:00:00Z"

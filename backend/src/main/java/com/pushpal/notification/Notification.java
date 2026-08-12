@@ -30,6 +30,10 @@ public class Notification {
     @Column(length = 500)
     private String body;
 
+    @Column(name = "notification_icon", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    private NotificationIcon icon = NotificationIcon.BELL;
+
     @Column(name = "scheduled_time", nullable = false)
     private Instant scheduledTime;
 
