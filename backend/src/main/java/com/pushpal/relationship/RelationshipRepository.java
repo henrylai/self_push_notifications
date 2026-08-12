@@ -18,6 +18,10 @@ public interface RelationshipRepository extends JpaRepository<UserRelationship, 
             + "WHERE relationship.inviteCode = :inviteCode")
     Optional<UserRelationship> findByInviteCodeForUpdate(@Param("inviteCode") String inviteCode);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT relationship FROM UserRelationship relationship WHERE relationship.id = :id")
+    Optional<UserRelationship> findByIdForUpdate(@Param("id") UUID id);
+
     boolean existsByInviteCode(String inviteCode);
 
     @EntityGraph(attributePaths = {"inviter", "invitee"})

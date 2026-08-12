@@ -1,5 +1,6 @@
 package com.pushpal.relationship;
 
+import com.pushpal.notification.NotificationRepository;
 import com.pushpal.user.User;
 import com.pushpal.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,11 +31,15 @@ class RelationshipServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private NotificationRepository notificationRepository;
+
     private RelationshipService relationshipService;
 
     @BeforeEach
     void setUp() {
-        relationshipService = new RelationshipService(relationshipRepository, userRepository);
+        relationshipService = new RelationshipService(
+                relationshipRepository, userRepository, notificationRepository);
     }
 
     @Test
@@ -122,6 +128,36 @@ class RelationshipServiceTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("already linked");
         verify(relationshipRepository).findByInviteCodeForUpdate("ABC123");
+    }
+
+    @Test
+    void removingPalCancelsPendingRemindersInBothDirections() {
+        User currentUser = user();
+        User pal = user();
+        UserRelationship relationship = acceptedRelationship(currentUser, pal);
+        when(relationshipRepository.findByIdForUpdate(relationship.getId()))
+                .thenReturn(Optional.of(relationship));
+
+        relationshipService.removePal(relationship.getId(), currentUser.getId());
+
+        verify(notificationRepository).cancelPendingNotificationsBetweenUsers(
+                currentUser.getId(), pal.getId());
+        verify(relationshipRepository).delete(relationship);
+    }
+
+    @Test
+    void cannotRemoveAnotherUsersPal() {
+        User firstUser = user();
+        User secondUser = user();
+        UserRelationship relationship = acceptedRelationship(firstUser, secondUser);
+        when(relationshipRepository.findByIdForUpdate(relationship.getId()))
+                .thenReturn(Optional.of(relationship));
+
+        assertThatThrownBy(() -> relationshipService.removePal(relationship.getId(), UUID.randomUUID()))
+                .isInstanceOf(jakarta.persistence.EntityNotFoundException.class);
+
+        verify(notificationRepository, never()).cancelPendingNotificationsBetweenUsers(any(), any());
+        verify(relationshipRepository, never()).delete(relationship);
     }
 
     private User user() {

@@ -44,4 +44,13 @@ public class RelationshipController {
                 .toList();
         return ResponseEntity.ok(relationships);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> removePal(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @PathVariable UUID id) {
+        UUID userId = UUID.fromString(userDetails.getUsername());
+        relationshipService.removePal(id, userId);
+        return ResponseEntity.ok(Map.of("message", "Pal removed and pending reminders cancelled"));
+    }
 }

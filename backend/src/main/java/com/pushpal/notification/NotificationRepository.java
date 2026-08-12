@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -30,4 +31,12 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
             + "(n.retryCount > 0 AND n.nextAttemptAt IS NOT NULL AND n.nextAttemptAt <= :now)) "
             + "ORDER BY COALESCE(n.nextAttemptAt, n.scheduledTime)")
     Page<Notification> findPendingNotifications(@Param("now") Instant now, Pageable pageable);
+
+    @Modifying
+    @Query("UPDATE Notification n SET n.status = 'CANCELLED', n.nextAttemptAt = NULL, "
+            + "n.failureReason = NULL WHERE n.status = 'PENDING' AND "
+            + "((n.senderId = :firstUserId AND n.recipientId = :secondUserId) OR "
+            + "(n.senderId = :secondUserId AND n.recipientId = :firstUserId))")
+    int cancelPendingNotificationsBetweenUsers(@Param("firstUserId") UUID firstUserId,
+                                               @Param("secondUserId") UUID secondUserId);
 }

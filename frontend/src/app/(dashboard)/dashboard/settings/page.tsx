@@ -19,6 +19,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [relationships, setRelationships] = useState<Relationship[]>([]);
   const [relationshipsError, setRelationshipsError] = useState('');
+  const [removingPalId, setRemovingPalId] = useState<string | null>(null);
 
   useEffect(() => {
     api.getRelationships().then(setRelationships).catch((err: unknown) => {
@@ -55,6 +56,24 @@ export default function SettingsPage() {
     }
   };
 
+  const handleRemovePal = async (relationship: Relationship) => {
+    const palName = relationship.palName || relationship.partnerName || 'this Pal';
+    if (!window.confirm(`Remove ${palName}? Pending reminders between you will be cancelled.`)) {
+      return;
+    }
+
+    setRemovingPalId(relationship.id);
+    try {
+      await api.removePal(relationship.id);
+      setRelationships((current) => current.filter((pal) => pal.id !== relationship.id));
+      addToast('Pal removed. Pending reminders were cancelled.');
+    } catch (err) {
+      addToast(err instanceof Error ? err.message : 'Unable to remove Pal', 'error');
+    } finally {
+      setRemovingPalId(null);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-xl font-bold text-gray-900">Settings</h1>
@@ -81,11 +100,21 @@ export default function SettingsPage() {
           <p className="text-sm text-gray-500">No Pals linked yet.</p>
         ) : (
           relationships.map((r) => (
-            <div key={r.id} className="flex items-center gap-2 text-sm text-gray-600">
-              <LinkIcon className="h-4 w-4 text-primary-600" />
-              <span>
-                {r.palName || r.partnerName} ({r.palEmail || r.partnerEmail})
-              </span>
+            <div key={r.id} className="flex items-center justify-between gap-3 py-1 text-sm text-gray-600">
+              <div className="flex min-w-0 items-center gap-2">
+                <LinkIcon className="h-4 w-4 shrink-0 text-primary-600" />
+                <span className="truncate">
+                  {r.palName || r.partnerName} ({r.palEmail || r.partnerEmail})
+                </span>
+              </div>
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => handleRemovePal(r)}
+                disabled={removingPalId === r.id}
+              >
+                {removingPalId === r.id ? 'Removing...' : 'Remove'}
+              </Button>
             </div>
           ))
         )}

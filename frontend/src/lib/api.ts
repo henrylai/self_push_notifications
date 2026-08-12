@@ -65,6 +65,8 @@ export const api = {
       body: JSON.stringify({ inviteCode }),
     }),
   getRelationships: () => request<Relationship[]>('/api/relationships'),
+  removePal: (id: string) =>
+    request<MessageResponse>(`/api/relationships/${id}`, { method: 'DELETE' }),
 
   // Devices
   registerDevice: (subscription: RegisterDeviceInput) =>

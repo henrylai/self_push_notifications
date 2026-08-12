@@ -150,6 +150,17 @@ Returns the updated user object.
 Pending invitations have null Pal fields and status `PENDING`. The legacy `partnerId`,
 `partnerName`, and `partnerEmail` fields are returned during the client migration period.
 
+### DELETE `/api/relationships/{id}`
+
+Either linked user may remove a Pal. Pending reminders in either direction are cancelled; sent,
+delivered, viewed, and failed reminders remain in history.
+
+```json
+{
+  "message": "Pal removed and pending reminders cancelled"
+}
+```
+
 ## Devices
 
 Push subscription secrets are accepted during registration but are never returned by list APIs.

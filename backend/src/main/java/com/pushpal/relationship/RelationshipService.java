@@ -1,7 +1,9 @@
 package com.pushpal.relationship;
 
+import com.pushpal.notification.NotificationRepository;
 import com.pushpal.user.User;
 import com.pushpal.user.UserRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,7 @@ public class RelationshipService {
 
     private final RelationshipRepository relationshipRepository;
     private final UserRepository userRepository;
+    private final NotificationRepository notificationRepository;
 
     private String generateInviteCode() {
         StringBuilder code = new StringBuilder(INVITE_CODE_LENGTH);
@@ -100,5 +103,20 @@ public class RelationshipService {
 
     public boolean areUsersLinked(UUID firstUserId, UUID secondUserId) {
         return relationshipRepository.areUsersLinked(firstUserId, secondUserId);
+    }
+
+    @Transactional
+    public void removePal(UUID relationshipId, UUID userId) {
+        UserRelationship relationship = relationshipRepository.findByIdForUpdate(relationshipId)
+                .filter(item -> "ACCEPTED".equals(item.getStatus()))
+                .filter(item -> userId.equals(item.getInviter().getId())
+                        || (item.getInvitee() != null && userId.equals(item.getInvitee().getId())))
+                .orElseThrow(() -> new EntityNotFoundException("Pal not found"));
+
+        UUID palId = userId.equals(relationship.getInviter().getId())
+                ? relationship.getInvitee().getId()
+                : relationship.getInviter().getId();
+        notificationRepository.cancelPendingNotificationsBetweenUsers(userId, palId);
+        relationshipRepository.delete(relationship);
     }
 }
