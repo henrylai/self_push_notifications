@@ -42,7 +42,7 @@ export default function InviteCodeDisplay({ code }: InviteCodeDisplayProps) {
         </Button>
       </div>
       <p className="mt-2 text-xs text-gray-500">
-        Share this code with your partner so they can link their account.
+        Share this code with a Pal so they can link their account.
       </p>
     </Card>
   );

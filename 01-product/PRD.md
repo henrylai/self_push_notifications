@@ -6,13 +6,13 @@ There is no tool that lets you schedule a push notification to someone else's ph
 
 ## Proposed Solution
 
-A Progressive Web App (PWA) with a Spring Boot backend that uses the Web Push API (VAPID) to deliver scheduled push notifications. Users can schedule self-reminders or send scheduled reminders to a linked partner.
+A Progressive Web App (PWA) with a Spring Boot backend that uses the Web Push API (VAPID) to deliver scheduled push notifications. Users can schedule self-reminders or send scheduled reminders to any linked Pal.
 
 ## Target Users (MVP)
 
-- **Couples** in long-distance or busy relationships
+- **Friends, family, and couples** who want reliable scheduled reminders
 - **Parents** managing family schedules
-- **MVP limit:** 2 users per account (self + one partner)
+- **Recipient model:** each reminder has one recipient; users may link with multiple Pals
 
 ## Success Metrics
 
@@ -20,7 +20,7 @@ A Progressive Web App (PWA) with a Spring Boot backend that uses the Web Push AP
 |---|---|---|
 | Daily active usage | >50% of registered users | Analytics |
 | Time to schedule self-reminder | < 5 seconds | User testing |
-| Time to send to partner | < 10 seconds | User testing |
+| Time to send to a Pal | < 10 seconds | User testing |
 | Push delivery rate | > 99% | Backend logs |
 | User retention (weekly) | > 40% | Analytics |
 
@@ -38,7 +38,7 @@ A Progressive Web App (PWA) with a Spring Boot backend that uses the Web Push AP
 
 ### Notifications
 - FR-007: User can create a self-reminder
-- FR-008: User can send a reminder to their linked partner
+- FR-008: User can send a reminder to any linked Pal
 - FR-009: User can view all sent and received notifications
 - FR-010: User can cancel a pending notification
 - FR-011: Notification status updates (sent → delivered → viewed)
@@ -46,8 +46,8 @@ A Progressive Web App (PWA) with a Spring Boot backend that uses the Web Push AP
 
 ### Relationships
 - FR-013: User can generate an invite code
-- FR-014: User can accept an invite code to link with a partner
-- FR-015: Each user can have one linked partner (MVP)
+- FR-014: User can accept an invite code to link with a Pal
+- FR-015: Each user can link with multiple Pals (one recipient per reminder)
 
 ## Non-Functional Requirements
 

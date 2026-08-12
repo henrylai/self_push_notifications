@@ -32,10 +32,16 @@ export interface Device {
 
 export interface Relationship {
   id: string;
-  partnerId: string | null;
-  partnerName: string | null;
-  partnerEmail: string | null;
+  palId: string | null;
+  palName: string | null;
+  palEmail: string | null;
   status: string;
+  /** @deprecated Compatibility fields for an older API deployment. */
+  partnerId?: string | null;
+  /** @deprecated Compatibility fields for an older API deployment. */
+  partnerName?: string | null;
+  /** @deprecated Compatibility fields for an older API deployment. */
+  partnerEmail?: string | null;
 }
 
 export interface AuthResponse {

@@ -36,7 +36,7 @@ public class NotificationService {
         UUID recipientId = request.recipientId() != null ? request.recipientId() : senderId;
         if (!recipientId.equals(senderId)
                 && !relationshipService.areUsersLinked(senderId, recipientId)) {
-            throw new AccessDeniedException("Notifications can only be sent to linked users");
+            throw new AccessDeniedException("Notifications can only be sent to linked Pals");
         }
 
         Instant now = Instant.now();

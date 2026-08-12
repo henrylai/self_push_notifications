@@ -25,11 +25,12 @@ export default function CreateNotificationForm() {
 
   useEffect(() => {
     api.getRelationships().then(setRelationships).catch((err: unknown) => {
-      setRelationshipsError(err instanceof Error ? err.message : 'Unable to load linked partners');
+      setRelationshipsError(err instanceof Error ? err.message : 'Unable to load linked Pals');
     });
   }, []);
 
-  const linkedPartner = relationships.find((r) => r.status === 'ACCEPTED' && r.partnerId);
+  const linkedPals = relationships.filter((relationship) => relationship.status === 'ACCEPTED'
+    && (relationship.palId || relationship.partnerId));
   const earliestSchedule = new Date(Date.now() + 60_000);
   earliestSchedule.setMinutes(
     earliestSchedule.getMinutes() - earliestSchedule.getTimezoneOffset()
@@ -40,8 +41,8 @@ export default function CreateNotificationForm() {
     setError('');
     setSubmitting(true);
 
-    const recipientId =
-      recipient === 'partner' && linkedPartner ? linkedPartner.partnerId ?? undefined : undefined;
+    const selectedPal = linkedPals.find((pal) => pal.id === recipient);
+    const recipientId = selectedPal?.palId || selectedPal?.partnerId || undefined;
 
     try {
       const notification = await api.createNotification({
@@ -93,13 +94,15 @@ export default function CreateNotificationForm() {
           className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
         >
           <option value="me">Me</option>
-          <option value="partner" disabled={!linkedPartner}>
-            {linkedPartner ? `Partner (${linkedPartner.partnerName})` : 'Partner (no partner linked)'}
-          </option>
+          {linkedPals.map((pal) => (
+            <option key={pal.id} value={pal.id}>
+              {pal.palName || pal.partnerName || 'Unnamed Pal'}
+            </option>
+          ))}
         </select>
-        {!linkedPartner && (
+        {!linkedPals.length && (
           <p className="mt-1 text-xs text-gray-500">
-            Link a partner in Settings to send reminders to them.
+            Link a Pal in Settings to send reminders to them.
           </p>
         )}
         {relationshipsError && <p className="mt-1 text-xs text-red-600">{relationshipsError}</p>}

@@ -17,6 +17,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -90,6 +91,39 @@ class RelationshipServiceTest {
         assertThat(relationshipService.getRelationshipsForUser(userId)).isEmpty();
     }
 
+    @Test
+    void relationshipListIncludesEveryAcceptedPal() {
+        User currentUser = user();
+        User firstPal = user();
+        User secondPal = user();
+        UserRelationship invited = acceptedRelationship(currentUser, firstPal);
+        UserRelationship accepted = acceptedRelationship(secondPal, currentUser);
+        when(relationshipRepository.findByInviterIdAndStatus(currentUser.getId(), "ACCEPTED"))
+                .thenReturn(List.of(invited));
+        when(relationshipRepository.findByInviteeIdAndStatus(currentUser.getId(), "ACCEPTED"))
+                .thenReturn(List.of(accepted));
+
+        List<UserRelationship> relationships = relationshipService.getRelationshipsForUser(currentUser.getId());
+
+        assertThat(relationships).containsExactly(invited, accepted);
+    }
+
+    @Test
+    void cannotAcceptAnotherInviteFromAnAlreadyLinkedPal() {
+        User inviter = user();
+        User invitee = user();
+        UserRelationship relationship = pendingRelationship(inviter, Instant.now());
+        when(relationshipRepository.findByInviteCodeForUpdate("ABC123"))
+                .thenReturn(Optional.of(relationship));
+        when(userRepository.findById(invitee.getId())).thenReturn(Optional.of(invitee));
+        when(relationshipRepository.areUsersLinked(inviter.getId(), invitee.getId())).thenReturn(true);
+
+        assertThatThrownBy(() -> relationshipService.acceptInvite("ABC123", invitee.getId()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("already linked");
+        verify(relationshipRepository).findByInviteCodeForUpdate("ABC123");
+    }
+
     private User user() {
         User user = new User();
         user.setId(UUID.randomUUID());
@@ -105,6 +139,13 @@ class RelationshipServiceTest {
         relationship.setInviteCode("ABC123");
         relationship.setStatus("PENDING");
         relationship.setCreatedAt(createdAt);
+        return relationship;
+    }
+
+    private UserRelationship acceptedRelationship(User inviter, User invitee) {
+        UserRelationship relationship = pendingRelationship(inviter, Instant.now());
+        relationship.setInvitee(invitee);
+        relationship.setStatus("ACCEPTED");
         return relationship;
     }
 }

@@ -22,7 +22,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     api.getRelationships().then(setRelationships).catch((err: unknown) => {
-      setRelationshipsError(err instanceof Error ? err.message : 'Unable to load linked partners');
+      setRelationshipsError(err instanceof Error ? err.message : 'Unable to load linked Pals');
     });
   }, []);
 
@@ -43,7 +43,7 @@ export default function SettingsPage() {
     setLoading(true);
     try {
       await api.acceptInvite(enterCode.trim());
-      addToast('Partner linked!');
+      addToast('Pal linked!');
       setEnterCode('');
       const rels = await api.getRelationships();
       setRelationships(rels);
@@ -72,19 +72,19 @@ export default function SettingsPage() {
         </div>
       </Card>
 
-      {/* Partner */}
+      {/* Pals */}
       <Card>
-        <h2 className="mb-2 font-semibold text-gray-900">Linked Partner</h2>
+        <h2 className="mb-2 font-semibold text-gray-900">Linked Pals</h2>
         {relationshipsError ? (
           <p className="text-sm text-red-600">{relationshipsError}</p>
         ) : relationships.length === 0 ? (
-          <p className="text-sm text-gray-500">No partner linked yet.</p>
+          <p className="text-sm text-gray-500">No Pals linked yet.</p>
         ) : (
           relationships.map((r) => (
             <div key={r.id} className="flex items-center gap-2 text-sm text-gray-600">
               <LinkIcon className="h-4 w-4 text-primary-600" />
               <span>
-                {r.partnerName} ({r.partnerEmail})
+                {r.palName || r.partnerName} ({r.palEmail || r.partnerEmail})
               </span>
             </div>
           ))
@@ -105,10 +105,10 @@ export default function SettingsPage() {
 
       {/* Enter Invite Code */}
       <Card>
-        <h2 className="mb-2 font-semibold text-gray-900">Link with Partner</h2>
+        <h2 className="mb-2 font-semibold text-gray-900">Link with a Pal</h2>
         <div className="flex gap-2">
           <Input
-            placeholder="Enter partner's invite code"
+            placeholder="Enter a Pal's invite code"
             value={enterCode}
             onChange={(e) => setEnterCode(e.target.value.toUpperCase())}
             maxLength={6}

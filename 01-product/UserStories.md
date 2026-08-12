@@ -66,7 +66,7 @@
 
 **As a** user,
 **I want to** generate an invite code,
-**So that** I can link with my partner.
+**So that** I can link with a Pal.
 
 ### Acceptance Criteria
 - [ ] User can access invite code from settings/dashboard
@@ -80,7 +80,7 @@
 ## US-006: Accept Invite Code
 
 **As a** user with an invite code,
-**I want to** enter my partner's code,
+**I want to** enter a Pal's code,
 **So that** we can send reminders to each other.
 
 ### Acceptance Criteria
@@ -92,15 +92,15 @@
 
 ---
 
-## US-007: Send Reminder to Partner
+## US-007: Send Reminder to a Pal
 
 **As a** linked user,
-**I want to** send a scheduled reminder to my partner,
+**I want to** send a scheduled reminder to a selected Pal,
 **So that** they get notified at a specific time.
 
 ### Acceptance Criteria
-- [ ] "Send to partner" option is available when creating a notification
-- [ ] Partner's name/avatar is shown as recipient
+- [ ] Every linked Pal is available when creating a notification
+- [ ] Selected Pal's name/avatar is shown as recipient
 - [ ] Same fields as self-reminder (title, body, time)
 - [ ] Notification is saved with sender and recipient IDs
 - [ ] Recipient receives push notification at scheduled time

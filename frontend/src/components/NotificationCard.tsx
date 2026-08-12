@@ -57,8 +57,8 @@ export default function NotificationCard({ notification, currentUserId, onCancel
           {isSelfReminder
             ? 'For: Me'
             : isSender
-            ? `To: ${notification.recipientName || 'Partner'}`
-            : `From: ${notification.senderName || 'Partner'}`}
+            ? `To: ${notification.recipientName || 'Pal'}`
+            : `From: ${notification.senderName || 'Pal'}`}
         </span>
         <span>{formatDate(notification.scheduledTime)}</span>
       </div>

@@ -80,6 +80,9 @@ public class RelationshipService {
 
         User invitee = userRepository.findById(inviteeId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        if (relationshipRepository.areUsersLinked(relationship.getInviter().getId(), inviteeId)) {
+            throw new IllegalStateException("You are already linked with this Pal");
+        }
         relationship.setInvitee(invitee);
         relationship.setStatus("ACCEPTED");
         return relationshipRepository.save(relationship);

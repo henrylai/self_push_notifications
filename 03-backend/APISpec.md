@@ -139,15 +139,16 @@ Returns the updated user object.
 [
   {
     "id": "uuid",
-    "partnerId": "uuid",
-    "partnerName": "Partner Name",
-    "partnerEmail": "partner@example.com",
+    "palId": "uuid",
+    "palName": "Pal Name",
+    "palEmail": "pal@example.com",
     "status": "ACCEPTED"
   }
 ]
 ```
 
-Pending invitations have null partner fields and status `PENDING`.
+Pending invitations have null Pal fields and status `PENDING`. The legacy `partnerId`,
+`partnerName`, and `partnerEmail` fields are returned during the client migration period.
 
 ## Devices
 
@@ -195,14 +196,14 @@ Only the owning user can remove a device.
 
 ## Notifications
 
-Users may schedule reminders for themselves or an accepted linked partner. Requests are limited to
+Users may schedule reminders for themselves or any accepted linked Pal. Requests are limited to
 10 reminders per sender in a rolling hour.
 
 ### POST `/api/notifications`
 
 ```json
 {
-  "recipientId": "linked-partner-uuid",
+  "recipientId": "linked-pal-uuid",
   "title": "Take out the trash",
   "body": "Don't forget!",
   "scheduledTime": "2026-08-10T19:00:00Z"

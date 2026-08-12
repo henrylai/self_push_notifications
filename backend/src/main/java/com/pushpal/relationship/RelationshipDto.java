@@ -6,25 +6,31 @@ import java.util.UUID;
 
 public record RelationshipDto(
         UUID id,
-        UUID partnerId,
-        String partnerName,
-        String partnerEmail,
-        String status
+        UUID palId,
+        String palName,
+        String palEmail,
+        String status,
+        @Deprecated UUID partnerId,
+        @Deprecated String partnerName,
+        @Deprecated String partnerEmail
 ) {
     public static RelationshipDto fromEntity(UserRelationship relationship, UUID currentUserId) {
-        User partner = null;
+        User pal = null;
         if (currentUserId.equals(relationship.getInviter().getId())) {
-            partner = relationship.getInvitee();
+            pal = relationship.getInvitee();
         } else if (relationship.getInvitee() != null
                 && currentUserId.equals(relationship.getInvitee().getId())) {
-            partner = relationship.getInviter();
+            pal = relationship.getInviter();
         }
 
         return new RelationshipDto(
                 relationship.getId(),
-                partner != null ? partner.getId() : null,
-                partner != null ? partner.getName() : null,
-                partner != null ? partner.getEmail() : null,
-                relationship.getStatus());
+                pal != null ? pal.getId() : null,
+                pal != null ? pal.getName() : null,
+                pal != null ? pal.getEmail() : null,
+                relationship.getStatus(),
+                pal != null ? pal.getId() : null,
+                pal != null ? pal.getName() : null,
+                pal != null ? pal.getEmail() : null);
     }
 }
