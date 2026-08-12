@@ -14,10 +14,11 @@ export async function subscribeToPush(registration: ServiceWorkerRegistration): 
     throw new Error('VAPID public key is not configured');
   }
 
-  const subscription = await registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
-  });
+  const subscription = await registration.pushManager.getSubscription()
+    || await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+    });
 
   await api.registerDevice({
     endpoint: subscription.endpoint,

@@ -93,6 +93,23 @@ class NotificationDeliveryServiceTest {
                 notification.getId(), "No push subscriptions registered");
     }
 
+    @Test
+    void storesThePushProviderFailureReasonForRetry() {
+        Notification notification = notification();
+        PushSubscription subscription = new PushSubscription();
+        subscription.setId(UUID.randomUUID());
+        when(notificationService.lockDueNotification(eq(notification.getId()), any()))
+                .thenReturn(Optional.of(notification));
+        when(pushSubscriptionRepository.findByUserId(notification.getRecipientId()))
+                .thenReturn(List.of(subscription));
+        when(pushService.sendToAll(eq(List.of(subscription)), any()))
+                .thenReturn(new PushService.AggregatedResult(0, 1, "Web Push not configured"));
+
+        deliveryService.process(notification.getId());
+
+        verify(notificationService).markForRetry(notification.getId(), "Web Push not configured");
+    }
+
     private Notification notification() {
         Notification notification = new Notification();
         notification.setId(UUID.randomUUID());

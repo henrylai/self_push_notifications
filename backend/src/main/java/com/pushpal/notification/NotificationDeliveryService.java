@@ -57,7 +57,10 @@ public class NotificationDeliveryService {
             log.info("Notification {} sent to {} devices",
                     notification.getId(), result.successCount());
         } else {
-            handleFailure(notification, "Push delivery failed");
+            String failureReason = result.firstError();
+            handleFailure(notification, failureReason == null || failureReason.isBlank()
+                    ? "Push delivery failed"
+                    : failureReason);
         }
     }
 

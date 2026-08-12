@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import NotificationCard from '@/components/NotificationCard';
+import PushSetupNotice from '@/components/PushSetupNotice';
 import Button from '@/components/ui/button';
 import { PlusCircle, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -56,6 +57,7 @@ function DashboardContent() {
 
   return (
     <div className="flex flex-col gap-4">
+      <PushSetupNotice />
       {/* Tabs */}
       <div className="flex rounded-lg bg-gray-100 p-1">
         {(['sent', 'received'] as const).map((t) => (

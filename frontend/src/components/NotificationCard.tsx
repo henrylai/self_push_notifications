@@ -46,6 +46,12 @@ export default function NotificationCard({ notification, currentUserId, onCancel
       {notification.body && (
         <p className="text-sm text-gray-600">{notification.body}</p>
       )}
+      {notification.failureReason && (
+        <p className="text-sm text-red-600">
+          {notification.status === 'FAILED' ? 'Delivery failed' : 'Delivery retry scheduled'}:
+          {' '}{notification.failureReason}
+        </p>
+      )}
       <div className="flex items-center justify-between text-xs text-gray-500">
         <span>
           {isSelfReminder

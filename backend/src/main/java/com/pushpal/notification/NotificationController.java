@@ -41,7 +41,9 @@ public class NotificationController {
             @AuthenticationPrincipal UserDetails userDetails) {
         UUID userId = UUID.fromString(userDetails.getUsername());
         var received = notificationService.getReceivedNotifications(userId)
-                .stream().map(NotificationDto::fromEntity).toList();
+                .stream()
+                .filter(notification -> !userId.equals(notification.getSenderId()))
+                .map(NotificationDto::fromEntity).toList();
         var sent = notificationService.getSentNotifications(userId)
                 .stream().map(NotificationDto::fromEntity).toList();
         return ResponseEntity.ok(Map.of("received", received, "sent", sent));
