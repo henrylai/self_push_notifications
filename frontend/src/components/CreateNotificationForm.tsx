@@ -2,15 +2,17 @@
 
 import { useState, useEffect, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import Input from '@/components/ui/input';
 import Textarea from '@/components/ui/textarea';
 import Button from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
-import type { Relationship } from '@/types';
+import type { Notification, Relationship } from '@/types';
 
 export default function CreateNotificationForm() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { addToast } = useToast();
   const [relationships, setRelationships] = useState<Relationship[]>([]);
   const [title, setTitle] = useState('');
@@ -42,12 +44,19 @@ export default function CreateNotificationForm() {
       recipient === 'partner' && linkedPartner ? linkedPartner.partnerId ?? undefined : undefined;
 
     try {
-      await api.createNotification({
+      const notification = await api.createNotification({
         title,
         body: body || undefined,
         recipientId,
         scheduledTime: new Date(scheduledTime).toISOString(),
       });
+      queryClient.setQueryData<{ received: Notification[]; sent: Notification[] }>(
+        ['notifications'],
+        (existing) => existing
+          ? { ...existing, sent: [notification, ...existing.sent] }
+          : existing
+      );
+      void queryClient.invalidateQueries({ queryKey: ['notifications'] });
       addToast('Reminder scheduled!');
       router.push('/dashboard');
     } catch (err) {
