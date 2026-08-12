@@ -32,7 +32,7 @@ export default function DeviceRegistration() {
   };
 
   const handleRegister = async () => {
-    if (await register()) {
+    if (await register(true)) {
       addToast('Device registered');
       await loadDevices();
     }

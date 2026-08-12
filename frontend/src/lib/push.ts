@@ -8,14 +8,23 @@ export async function registerServiceWorker(): Promise<ServiceWorkerRegistration
   return registration;
 }
 
-export async function subscribeToPush(registration: ServiceWorkerRegistration): Promise<PushSubscription> {
+export async function subscribeToPush(
+  registration: ServiceWorkerRegistration,
+  replaceExisting = false
+): Promise<PushSubscription> {
   const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   if (!vapidPublicKey) {
     throw new Error('VAPID public key is not configured');
   }
 
-  const subscription = await registration.pushManager.getSubscription()
-    || await registration.pushManager.subscribe({
+  const existingSubscription = await registration.pushManager.getSubscription();
+  if (replaceExisting && existingSubscription) {
+    await existingSubscription.unsubscribe();
+  }
+
+  const subscription = !replaceExisting && existingSubscription
+    ? existingSubscription
+    : await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
     });

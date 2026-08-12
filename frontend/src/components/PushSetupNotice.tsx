@@ -33,7 +33,7 @@ export default function PushSetupNotice() {
     : 'Enable notifications on this device before scheduling reminders.';
 
   const enableNotifications = async () => {
-    if (await register()) {
+    if (await register(true)) {
       setHasRegisteredDevice(true);
     }
   };

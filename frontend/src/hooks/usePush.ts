@@ -21,7 +21,7 @@ export function usePush() {
     return result === 'granted';
   }, []);
 
-  const register = useCallback(async () => {
+  const register = useCallback(async (replaceExisting = false) => {
     setLoading(true);
     setError(null);
     try {
@@ -32,7 +32,7 @@ export function usePush() {
       }
 
       const registration = await registerServiceWorker();
-      await subscribeToPush(registration);
+      await subscribeToPush(registration, replaceExisting);
       return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to register push notifications');
