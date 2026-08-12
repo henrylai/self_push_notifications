@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import lombok.extern.slf4j.Slf4j;
 import nl.martijndwars.webpush.Notification;
 import nl.martijndwars.webpush.PushService;
+import nl.martijndwars.webpush.Urgency;
 import org.apache.http.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -37,11 +38,14 @@ public class WebPushProvider implements NotificationProvider {
             pushPayload.put("data", payload.data());
             String jsonPayload = gson.toJson(pushPayload);
 
+            // Reminder notifications are time-sensitive. Explicitly requesting high urgency lets
+            // a push service and the operating system prioritize them over background updates.
             Notification notification = new Notification(
                     subscription.getEndpoint(),
                     subscription.getP256dh(),
                     subscription.getAuthKey(),
-                    jsonPayload.getBytes());
+                    jsonPayload,
+                    Urgency.HIGH);
 
             HttpResponse response = pushService.send(notification);
             int status = response.getStatusLine().getStatusCode();

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { BellRing } from 'lucide-react';
-import { api } from '@/lib/api';
+import { syncExistingPushSubscription } from '@/lib/push';
 import { usePush } from '@/hooks/usePush';
 import Button from '@/components/ui/button';
 import Card from '@/components/ui/card';
@@ -14,9 +14,9 @@ export default function PushSetupNotice() {
 
   useEffect(() => {
     let active = true;
-    api.getDevices()
-      .then((devices) => {
-        if (active) setHasRegisteredDevice(devices.length > 0);
+    syncExistingPushSubscription()
+      .then((isCurrentDeviceRegistered) => {
+        if (active) setHasRegisteredDevice(isCurrentDeviceRegistered);
       })
       .catch(() => {
         if (active) setDevicesError('Unable to check notification setup.');

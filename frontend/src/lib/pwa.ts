@@ -1,8 +1,11 @@
 export async function registerSW(): Promise<ServiceWorkerRegistration | null> {
   if (!('serviceWorker' in navigator)) return null;
   try {
-    const registration = await navigator.serviceWorker.register('/sw.js');
-    return registration;
+    const registration = await navigator.serviceWorker.register('/sw.js', {
+      updateViaCache: 'none',
+    });
+    await registration.update().catch(() => undefined);
+    return navigator.serviceWorker.ready;
   } catch {
     return null;
   }

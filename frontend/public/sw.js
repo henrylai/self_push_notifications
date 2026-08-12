@@ -1,7 +1,7 @@
 self.addEventListener('install', (event) => {
   event.waitUntil(
     Promise.all([
-      caches.open('pushpal-v2').then((cache) =>
+      caches.open('pushpal-v3').then((cache) =>
         cache.addAll(['/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'])
       ),
       self.skipWaiting(),
@@ -13,7 +13,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
       caches.keys().then((keys) =>
-        Promise.all(keys.filter((key) => key !== 'pushpal-v2').map((key) => caches.delete(key)))
+        Promise.all(keys.filter((key) => key !== 'pushpal-v3').map((key) => caches.delete(key)))
       ),
       self.clients.claim(),
     ])
@@ -34,7 +34,7 @@ self.addEventListener('fetch', (event) => {
       .then((response) => {
         if (response.ok) {
           const copy = response.clone();
-          return caches.open('pushpal-v2')
+          return caches.open('pushpal-v3')
             .then((cache) => cache.put(event.request, copy))
             .then(() => response);
         }
@@ -49,7 +49,14 @@ self.addEventListener('fetch', (event) => {
 });
 
 self.addEventListener('push', (event) => {
-  const data = event.data ? event.data.json() : {};
+  let data = {};
+  const rawPayload = event.data ? event.data.text() : '';
+  try {
+    data = rawPayload ? JSON.parse(rawPayload) : {};
+  } catch {
+    // A malformed provider payload should never prevent a visible notification.
+    data = { title: 'PushPal', body: rawPayload };
+  }
   const payload = data.data || {};
   const options = {
     body: data.body || '',

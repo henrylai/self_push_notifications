@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from './api';
-import { subscribeToPush, urlBase64ToUint8Array } from './push';
+import {
+  registerServiceWorker,
+  subscribeToPush,
+  syncExistingPushSubscription,
+  urlBase64ToUint8Array,
+} from './push';
 
 vi.mock('./api', () => ({
   api: {
@@ -47,6 +52,57 @@ describe('subscribeToPush', () => {
     expect(api.registerDevice).toHaveBeenCalledWith(expect.objectContaining({
       endpoint: 'https://push.example.test/replacement',
     }));
+  });
+});
+
+describe('syncExistingPushSubscription', () => {
+  it('re-registers this browser subscription without prompting or replacing it', async () => {
+    const existing = subscription('https://push.example.test/current-phone');
+    const pushManager = {
+      getSubscription: vi.fn().mockResolvedValue(existing),
+      subscribe: vi.fn(),
+    };
+    const readyRegistration = registration(pushManager);
+    const pendingRegistration = {
+      update: vi.fn().mockResolvedValue(undefined),
+    };
+
+    vi.stubGlobal('Notification', { permission: 'granted' });
+    Object.defineProperty(navigator, 'serviceWorker', {
+      configurable: true,
+      value: {
+        register: vi.fn().mockResolvedValue(pendingRegistration),
+        ready: Promise.resolve(readyRegistration),
+      },
+    });
+
+    await expect(syncExistingPushSubscription()).resolves.toBe(true);
+
+    expect(existing.unsubscribe).not.toHaveBeenCalled();
+    expect(pushManager.subscribe).not.toHaveBeenCalled();
+    expect(api.registerDevice).toHaveBeenCalledWith(expect.objectContaining({
+      endpoint: 'https://push.example.test/current-phone',
+    }));
+  });
+
+  it('uses the active service worker after checking for an update', async () => {
+    const readyRegistration = registration({
+      getSubscription: vi.fn(),
+      subscribe: vi.fn(),
+    });
+    const pendingRegistration = {
+      update: vi.fn().mockResolvedValue(undefined),
+    };
+    const register = vi.fn().mockResolvedValue(pendingRegistration);
+
+    Object.defineProperty(navigator, 'serviceWorker', {
+      configurable: true,
+      value: { register, ready: Promise.resolve(readyRegistration) },
+    });
+
+    await expect(registerServiceWorker()).resolves.toBe(readyRegistration);
+    expect(register).toHaveBeenCalledWith('/sw.js', { updateViaCache: 'none' });
+    expect(pendingRegistration.update).toHaveBeenCalledOnce();
   });
 });
 

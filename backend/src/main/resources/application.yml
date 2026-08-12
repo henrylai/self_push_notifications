@@ -63,7 +63,7 @@ app:
     allowed-origin: ${CORS_ALLOWED_ORIGIN:http://localhost:3000}
   scheduler:
     enabled: true
-    interval-ms: 30000
+    interval-ms: ${SCHEDULER_INTERVAL_MS:10000}
 
 management:
   endpoints:

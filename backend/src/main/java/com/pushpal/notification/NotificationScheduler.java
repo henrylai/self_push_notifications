@@ -19,7 +19,7 @@ public class NotificationScheduler {
     private final NotificationService notificationService;
     private final NotificationDeliveryService notificationDeliveryService;
 
-    @Scheduled(fixedDelayString = "${app.scheduler.interval-ms:30000}")
+    @Scheduled(fixedDelayString = "${app.scheduler.interval-ms:10000}")
     public void processPendingNotifications() {
         Page<Notification> pending = notificationService.getPendingNotifications(
                 Instant.now(), PageRequest.of(0, 50));
