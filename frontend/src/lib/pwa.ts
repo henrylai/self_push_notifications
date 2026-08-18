@@ -19,6 +19,12 @@ export function isStandalone(): boolean {
   );
 }
 
+export function isIos(): boolean {
+  if (typeof window === 'undefined') return false;
+  return /iPad|iPhone|iPod/.test(window.navigator.userAgent)
+    || (window.navigator.platform === 'MacIntel' && window.navigator.maxTouchPoints > 1);
+}
+
 export function canInstall(): boolean {
   if (typeof window === 'undefined') return false;
   return 'beforeinstallprompt' in window;

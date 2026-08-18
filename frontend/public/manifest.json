@@ -2,6 +2,7 @@
   "name": "PushPal",
   "short_name": "PushPal",
   "description": "Scheduled push notifications between people",
+  "id": "/",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
