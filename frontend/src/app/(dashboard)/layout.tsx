@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { isAuthenticated } from '@/lib/auth';
 import { api } from '@/lib/api';
 import { useAuth } from '@/hooks/useAuth';
-import { Bell, LayoutDashboard, PlusCircle, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -41,7 +42,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <header className="sticky top-0 z-40 border-b border-gray-200 bg-white">
         <div className="mx-auto flex h-14 max-w-2xl items-center justify-between px-4">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-primary-600" />
+            <Image
+              src="/icons/icon-192.png"
+              alt=""
+              width={28}
+              height={28}
+              className="h-7 w-7 rounded-lg"
+              priority
+            />
             <span className="text-lg font-bold text-gray-900">PushPal</span>
           </Link>
           <div className="flex items-center gap-3">

@@ -1,8 +1,15 @@
 self.addEventListener('install', (event) => {
   event.waitUntil(
     Promise.all([
-      caches.open('pushpal-v3').then((cache) =>
-        cache.addAll(['/manifest.json', '/icons/icon-192.png', '/icons/icon-512.png'])
+      caches.open('pushpal-v4').then((cache) =>
+        cache.addAll([
+          '/manifest.json',
+          '/icons/icon-192.png',
+          '/icons/icon-512.png',
+          '/icons/icon-maskable-192.png',
+          '/icons/icon-maskable-512.png',
+          '/icons/apple-touch-icon.png',
+        ])
       ),
       self.skipWaiting(),
     ])
@@ -13,7 +20,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
       caches.keys().then((keys) =>
-        Promise.all(keys.filter((key) => key !== 'pushpal-v3').map((key) => caches.delete(key)))
+        Promise.all(keys.filter((key) => key !== 'pushpal-v4').map((key) => caches.delete(key)))
       ),
       self.clients.claim(),
     ])
@@ -34,7 +41,7 @@ self.addEventListener('fetch', (event) => {
       .then((response) => {
         if (response.ok) {
           const copy = response.clone();
-          return caches.open('pushpal-v3')
+          return caches.open('pushpal-v4')
             .then((cache) => cache.put(event.request, copy))
             .then(() => response);
         }
@@ -60,8 +67,8 @@ self.addEventListener('push', (event) => {
   const payload = data.data || {};
   const options = {
     body: data.body || '',
-    icon: notificationIconUrl(payload.icon),
-    badge: '/icons/icon-192.png',
+    icon: '/icons/icon-192.png',
+    badge: notificationBadgeUrl(payload.icon),
     data: { notificationId: payload.notificationId },
     tag: payload.notificationId,
   };
@@ -73,7 +80,7 @@ self.addEventListener('push', (event) => {
   );
 });
 
-function notificationIconUrl(icon) {
+function notificationBadgeUrl(icon) {
   const supportedIcons = ['bell', 'heart', 'star', 'check', 'calendar', 'gift'];
   return supportedIcons.includes(icon)
     ? `/icons/notifications/${icon}.svg`
