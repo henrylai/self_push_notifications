@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service("pushDeliveryService")
 @RequiredArgsConstructor
@@ -18,29 +19,51 @@ public class PushService {
 
     public AggregatedResult sendToAll(List<PushSubscription> subscriptions,
                                      NotificationProvider.NotificationPayload payload) {
-        int successCount = 0;
-        int failureCount = 0;
-        String firstError = null;
+        List<SubscriptionResult> results = new java.util.ArrayList<>();
 
         for (PushSubscription subscription : subscriptions) {
             var result = notificationProvider.send(subscription, payload);
-            if (result.success()) {
-                successCount++;
-            } else {
-                failureCount++;
-                if (firstError == null) {
-                    firstError = result.errorMessage();
-                }
+            results.add(new SubscriptionResult(
+                    subscription.getId(), result.success(), result.subscriptionGone(), result.errorMessage()));
+            if (!result.success()) {
                 if (result.subscriptionGone()) {
-                    log.info("Removing stale push subscription {}", subscription.getId());
-                    pushSubscriptionRepository.delete(subscription);
+                    log.info("Revoking stale push subscription {}", subscription.getId());
+                    subscription.setRevoked(true);
+                    subscription.setRevocationReason("EXPIRED");
+                    pushSubscriptionRepository.save(subscription);
                 }
             }
         }
 
-        log.debug("Push results: {} success, {} failures", successCount, failureCount);
-        return new AggregatedResult(successCount, failureCount, firstError);
+        AggregatedResult aggregated = new AggregatedResult(results);
+        log.debug("Push results: {} success, {} failures",
+                aggregated.successCount(), aggregated.failureCount());
+        return aggregated;
     }
 
-    public record AggregatedResult(int successCount, int failureCount, String firstError) {}
+    public record SubscriptionResult(
+            UUID subscriptionId,
+            boolean success,
+            boolean subscriptionGone,
+            String errorMessage) {}
+
+    public record AggregatedResult(List<SubscriptionResult> results) {
+
+        public int successCount() {
+            return (int) results.stream().filter(SubscriptionResult::success).count();
+        }
+
+        public int failureCount() {
+            return results.size() - successCount();
+        }
+
+        public String firstError() {
+            return results.stream()
+                    .filter(result -> !result.success())
+                    .map(SubscriptionResult::errorMessage)
+                    .filter(error -> error != null && !error.isBlank())
+                    .findFirst()
+                    .orElse(null);
+        }
+    }
 }

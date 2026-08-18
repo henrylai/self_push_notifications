@@ -66,13 +66,13 @@
 
 ---
 
-## ADR-004: Next.js 14 Static Export
+## ADR-004: Next.js Static Export
 
 **Status:** Accepted
 
 **Context:** Need a frontend that works as a PWA with good performance.
 
-**Decision:** Use Next.js 14 with App Router and static export (`output: 'export'`).
+**Decision:** Use Next.js 16 with App Router and static export (`output: 'export'`).
 
 **Rationale:**
 - Static export works on any CDN (Vercel, Cloudflare)

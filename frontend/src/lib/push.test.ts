@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { api } from './api';
 import {
   registerServiceWorker,
+  disableCurrentPushSubscription,
   subscribeToPush,
   syncExistingPushSubscription,
   urlBase64ToUint8Array,
@@ -10,12 +11,19 @@ import {
 vi.mock('./api', () => ({
   api: {
     registerDevice: vi.fn(),
+    unregisterDevice: vi.fn(),
+    removeDevice: vi.fn(),
   },
 }));
 
 describe('subscribeToPush', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
+    vi.mocked(api.registerDevice).mockResolvedValue({
+      message: 'Push subscription registered',
+      deviceId: 'device-id',
+    });
   });
 
   it('reuses and registers an existing valid browser subscription', async () => {
@@ -31,7 +39,9 @@ describe('subscribeToPush', () => {
     expect(pushManager.subscribe).not.toHaveBeenCalled();
     expect(api.registerDevice).toHaveBeenCalledWith(expect.objectContaining({
       endpoint: 'https://push.example.test/existing',
+      reactivate: true,
     }));
+    expect(localStorage.getItem('pushpal_device_id')).toBe('device-id');
   });
 
   it('replaces a stale browser subscription before registering the device', async () => {
@@ -82,6 +92,7 @@ describe('syncExistingPushSubscription', () => {
     expect(pushManager.subscribe).not.toHaveBeenCalled();
     expect(api.registerDevice).toHaveBeenCalledWith(expect.objectContaining({
       endpoint: 'https://push.example.test/current-phone',
+      reactivate: false,
     }));
   });
 
@@ -103,6 +114,30 @@ describe('syncExistingPushSubscription', () => {
     await expect(registerServiceWorker()).resolves.toBe(readyRegistration);
     expect(register).toHaveBeenCalledWith('/sw.js', { updateViaCache: 'none' });
     expect(pendingRegistration.update).toHaveBeenCalledOnce();
+  });
+});
+
+describe('disableCurrentPushSubscription', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
+
+  it('revokes the server record and unsubscribes the current browser', async () => {
+    const current = subscription('https://fcm.googleapis.com/fcm/send/current');
+    const getRegistration = vi.fn().mockResolvedValue(registration({
+      getSubscription: vi.fn().mockResolvedValue(current),
+      subscribe: vi.fn(),
+    }));
+    Object.defineProperty(navigator, 'serviceWorker', {
+      configurable: true,
+      value: { getRegistration },
+    });
+
+    await disableCurrentPushSubscription();
+
+    expect(api.unregisterDevice).toHaveBeenCalledWith(current.endpoint);
+    expect(current.unsubscribe).toHaveBeenCalledOnce();
   });
 });
 

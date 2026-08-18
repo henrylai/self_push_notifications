@@ -1,5 +1,6 @@
 package com.pushpal.relationship;
 
+import com.pushpal.common.RateLimitService;
 import com.pushpal.notification.NotificationRepository;
 import com.pushpal.user.User;
 import com.pushpal.user.UserRepository;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -29,6 +31,7 @@ public class RelationshipService {
     private final RelationshipRepository relationshipRepository;
     private final UserRepository userRepository;
     private final NotificationRepository notificationRepository;
+    private final RateLimitService rateLimitService;
 
     private String generateInviteCode() {
         StringBuilder code = new StringBuilder(INVITE_CODE_LENGTH);
@@ -40,6 +43,12 @@ public class RelationshipService {
 
     @Transactional
     public UserRelationship createInvite(UUID inviterId) {
+        rateLimitService.checkAndRecord(
+                inviterId,
+                "RELATIONSHIP_INVITE_CREATE",
+                10,
+                Duration.ofHours(1),
+                "Too many invite codes generated. Try again later.");
         User inviter = userRepository.findById(inviterId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -64,6 +73,12 @@ public class RelationshipService {
 
     @Transactional
     public UserRelationship acceptInvite(String inviteCode, UUID inviteeId) {
+        rateLimitService.checkAndRecord(
+                inviteeId,
+                "RELATIONSHIP_INVITE_ACCEPT",
+                20,
+                Duration.ofHours(1),
+                "Too many invite attempts. Try again later.");
         String normalizedCode = inviteCode.trim().toUpperCase(Locale.ROOT);
         UserRelationship relationship = relationshipRepository.findByInviteCodeForUpdate(normalizedCode)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid invite code"));

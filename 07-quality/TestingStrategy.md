@@ -155,7 +155,7 @@ describe('NotificationCard', () => {
 |---|---|
 | Login → Dashboard | Playwright |
 | Create notification | Playwright |
-| Partner linking | Playwright |
+| Pal linking | Playwright |
 | Push notification receive | Playwright + browser notifications |
 
 ### Example E2E Test
@@ -220,7 +220,7 @@ tasks.test {
 | Backend unit | 80% | 70% |
 | Backend integration | 75% | 60% |
 | Frontend unit | 80% | 70% |
-| E2E | Key flows | Login, create, partner |
+| E2E | Key flows | Login, create, Pal linking |
 
 ---
 

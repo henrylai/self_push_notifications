@@ -18,28 +18,28 @@ function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
-  const [error, setError] = useState('');
+  const [asyncError, setAsyncError] = useState('');
+  const [credentials] = useState(() => ({
+    token: searchParams.get('token'),
+    code: searchParams.get('code'),
+    state: searchParams.get('state'),
+    oauthError: searchParams.get('error_description') || searchParams.get('error'),
+  }));
   const handled = useRef(false);
+  const { token, code, state, oauthError } = credentials;
+  const requestError = oauthError || (!token && !code
+    ? 'No sign-in credentials were provided'
+    : '');
+  const error = requestError || asyncError;
 
   useEffect(() => {
     if (handled.current) return;
     handled.current = true;
 
-    const token = searchParams.get('token');
-    const code = searchParams.get('code');
-    const state = searchParams.get('state');
-    const oauthError = searchParams.get('error_description') || searchParams.get('error');
-
     window.history.replaceState(null, '', '/auth/callback');
 
-    if (oauthError) {
+    if (requestError) {
       sessionStorage.removeItem('pushpal_oauth_state');
-      setError(oauthError);
-      return;
-    }
-
-    if (!token && !code) {
-      setError('No sign-in credentials were provided');
       return;
     }
 
@@ -51,7 +51,7 @@ function AuthCallbackContent() {
           router.replace('/dashboard');
         })
         .catch(() => {
-          setError('Invalid or expired magic link');
+          setAsyncError('Invalid or expired magic link');
         });
       return;
     }
@@ -59,7 +59,9 @@ function AuthCallbackContent() {
     const expectedState = sessionStorage.getItem('pushpal_oauth_state');
     sessionStorage.removeItem('pushpal_oauth_state');
     if (!state || !expectedState || state !== expectedState) {
-      setError('Google sign-in could not be verified. Please try again.');
+      Promise.resolve().then(() => {
+        setAsyncError('Google sign-in could not be verified. Please try again.');
+      });
       return;
     }
 
@@ -71,9 +73,9 @@ function AuthCallbackContent() {
         router.replace('/dashboard');
       })
       .catch((err: unknown) => {
-        setError(err instanceof Error ? err.message : 'Google sign-in failed');
+        setAsyncError(err instanceof Error ? err.message : 'Google sign-in failed');
       });
-  }, [login, searchParams, router]);
+  }, [code, login, requestError, router, state, token]);
 
   if (error) {
     return (

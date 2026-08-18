@@ -55,11 +55,11 @@ com.pushpal
 
 ---
 
-## Frontend (Next.js 14 + TypeScript)
+## Frontend (Next.js 16 + React 19 + TypeScript)
 
 ### Conventions
 
-- **Next.js 14** with **App Router**
+- **Next.js 16** with **App Router**
 - **Static export** (`output: 'export'`)
 - **TypeScript** in strict mode
 - **Tailwind CSS** for styling
@@ -73,7 +73,7 @@ com.pushpal
 app/          # Pages (App Router)
 components/   # Reusable components
   ui/         # shadcn/ui primitives
-  cards/      # NotificationCard, PartnerCard
+  cards/      # NotificationCard, PalCard
   forms/      # NotificationForm, LoginForm
   layout/     # Header, BottomNav, EmptyState
 lib/          # Utilities (api, auth, push, pwa)

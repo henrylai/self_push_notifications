@@ -1,6 +1,7 @@
 package com.pushpal.relationship;
 
 import com.pushpal.notification.NotificationRepository;
+import com.pushpal.common.RateLimitService;
 import com.pushpal.user.User;
 import com.pushpal.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,12 +35,15 @@ class RelationshipServiceTest {
     @Mock
     private NotificationRepository notificationRepository;
 
+    @Mock
+    private RateLimitService rateLimitService;
+
     private RelationshipService relationshipService;
 
     @BeforeEach
     void setUp() {
         relationshipService = new RelationshipService(
-                relationshipRepository, userRepository, notificationRepository);
+                relationshipRepository, userRepository, notificationRepository, rateLimitService);
     }
 
     @Test

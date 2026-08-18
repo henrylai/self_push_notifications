@@ -9,7 +9,7 @@ import NotificationIconPicker from '@/components/NotificationIconPicker';
 import Button from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { useToast } from '@/components/ui/toast';
-import type { Notification, NotificationIcon, Relationship } from '@/types';
+import type { NotificationIcon, NotificationPage, Relationship } from '@/types';
 
 export default function CreateNotificationForm() {
   const router = useRouter();
@@ -21,6 +21,7 @@ export default function CreateNotificationForm() {
   const [icon, setIcon] = useState<NotificationIcon>('bell');
   const [recipient, setRecipient] = useState('me');
   const [scheduledTime, setScheduledTime] = useState('');
+  const [minimumScheduledTime, setMinimumScheduledTime] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [relationshipsError, setRelationshipsError] = useState('');
@@ -33,10 +34,13 @@ export default function CreateNotificationForm() {
 
   const linkedPals = relationships.filter((relationship) => relationship.status === 'ACCEPTED'
     && (relationship.palId || relationship.partnerId));
-  const earliestSchedule = new Date(Date.now() + 60_000);
-  earliestSchedule.setMinutes(
-    earliestSchedule.getMinutes() - earliestSchedule.getTimezoneOffset()
-  );
+  const refreshMinimumScheduledTime = () => {
+    const earliestSchedule = new Date(Date.now() + 60_000);
+    earliestSchedule.setMinutes(
+      earliestSchedule.getMinutes() - earliestSchedule.getTimezoneOffset()
+    );
+    setMinimumScheduledTime(earliestSchedule.toISOString().slice(0, 16));
+  };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -54,8 +58,8 @@ export default function CreateNotificationForm() {
         recipientId,
         scheduledTime: new Date(scheduledTime).toISOString(),
       });
-      queryClient.setQueryData<{ received: Notification[]; sent: Notification[] }>(
-        ['notifications'],
+      queryClient.setQueryData<NotificationPage>(
+        ['notifications', 0],
         (existing) => existing
           ? { ...existing, sent: [notification, ...existing.sent] }
           : existing
@@ -116,7 +120,8 @@ export default function CreateNotificationForm() {
         type="datetime-local"
         value={scheduledTime}
         onChange={(e) => setScheduledTime(e.target.value)}
-        min={earliestSchedule.toISOString().slice(0, 16)}
+        min={minimumScheduledTime || undefined}
+        onFocus={refreshMinimumScheduledTime}
         required
       />
       {error && <p className="text-sm text-red-600">{error}</p>}

@@ -97,7 +97,7 @@ async function reportDelivered(payload) {
       }
     );
     if (!response.ok) throw new Error('Delivery report rejected');
-  } catch (e) {
+  } catch {
     // best-effort delivery reporting
   }
 }
@@ -105,7 +105,9 @@ async function reportDelivered(payload) {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const notificationId = event.notification.data && event.notification.data.notificationId;
-  const target = notificationId ? `/dashboard?viewed=${notificationId}` : '/';
+  const target = notificationId
+    ? `/dashboard?tab=received&viewed=${notificationId}`
+    : '/';
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
       for (const client of windowClients) {

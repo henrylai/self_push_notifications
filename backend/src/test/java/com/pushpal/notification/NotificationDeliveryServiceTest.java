@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,6 +40,9 @@ class NotificationDeliveryServiceTest {
     @Mock
     private DeliveryTokenProvider deliveryTokenProvider;
 
+    @Mock
+    private NotificationDeliveryRepository notificationDeliveryRepository;
+
     private NotificationDeliveryService deliveryService;
 
     @BeforeEach
@@ -47,7 +51,8 @@ class NotificationDeliveryServiceTest {
                 notificationService,
                 pushSubscriptionRepository,
                 pushService,
-                deliveryTokenProvider);
+                deliveryTokenProvider,
+                notificationDeliveryRepository);
         ReflectionTestUtils.setField(deliveryService, "apiBaseUrl", "https://api.pushpal.test");
     }
 
@@ -56,15 +61,17 @@ class NotificationDeliveryServiceTest {
         Notification notification = notification();
         PushSubscription subscription = new PushSubscription();
         subscription.setId(UUID.randomUUID());
+        when(notificationDeliveryRepository.save(any(NotificationDelivery.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(notificationService.lockDueNotification(eq(notification.getId()), any()))
                 .thenReturn(Optional.of(notification));
-        when(pushSubscriptionRepository.findByUserId(notification.getRecipientId()))
+        when(pushSubscriptionRepository.findByUserIdAndRevokedFalse(notification.getRecipientId()))
                 .thenReturn(List.of(subscription));
         when(deliveryTokenProvider.generateToken(
                 notification.getId(), notification.getRecipientId()))
                 .thenReturn("delivery-token");
         when(pushService.sendToAll(eq(List.of(subscription)), any()))
-                .thenReturn(new PushService.AggregatedResult(1, 0, null));
+                .thenReturn(result(subscription, true, false, null));
         ArgumentCaptor<NotificationProvider.NotificationPayload> payloadCaptor =
                 ArgumentCaptor.forClass(NotificationProvider.NotificationPayload.class);
 
@@ -85,7 +92,7 @@ class NotificationDeliveryServiceTest {
         Notification notification = notification();
         when(notificationService.lockDueNotification(eq(notification.getId()), any()))
                 .thenReturn(Optional.of(notification));
-        when(pushSubscriptionRepository.findByUserId(notification.getRecipientId()))
+        when(pushSubscriptionRepository.findByUserIdAndRevokedFalse(notification.getRecipientId()))
                 .thenReturn(List.of());
 
         deliveryService.process(notification.getId());
@@ -99,16 +106,95 @@ class NotificationDeliveryServiceTest {
         Notification notification = notification();
         PushSubscription subscription = new PushSubscription();
         subscription.setId(UUID.randomUUID());
+        when(notificationDeliveryRepository.save(any(NotificationDelivery.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(notificationService.lockDueNotification(eq(notification.getId()), any()))
                 .thenReturn(Optional.of(notification));
-        when(pushSubscriptionRepository.findByUserId(notification.getRecipientId()))
+        when(pushSubscriptionRepository.findByUserIdAndRevokedFalse(notification.getRecipientId()))
                 .thenReturn(List.of(subscription));
         when(pushService.sendToAll(eq(List.of(subscription)), any()))
-                .thenReturn(new PushService.AggregatedResult(0, 1, "Web Push not configured"));
+                .thenReturn(result(subscription, false, false, "Web Push not configured"));
 
         deliveryService.process(notification.getId());
 
         verify(notificationService).markForRetry(notification.getId(), "Web Push not configured");
+    }
+
+    @Test
+    void retryTargetsOnlyDevicesThatFailedTheFirstAttempt() {
+        Notification notification = notification();
+        notification.setRetryCount(1);
+        PushSubscription alreadySent = subscription();
+        PushSubscription retryTarget = subscription();
+        NotificationDelivery sentDelivery = delivery(
+                notification, alreadySent, NotificationDeliveryStatus.SENT);
+        NotificationDelivery pendingDelivery = delivery(
+                notification, retryTarget, NotificationDeliveryStatus.PENDING);
+        pendingDelivery.setNextAttemptAt(Instant.now().minusSeconds(1));
+        when(notificationService.lockDueNotification(eq(notification.getId()), any()))
+                .thenReturn(Optional.of(notification));
+        when(pushSubscriptionRepository.findByUserIdAndRevokedFalse(notification.getRecipientId()))
+                .thenReturn(List.of(alreadySent, retryTarget));
+        when(notificationDeliveryRepository.findByNotificationId(notification.getId()))
+                .thenReturn(List.of(sentDelivery, pendingDelivery));
+        when(pushService.sendToAll(eq(List.of(retryTarget)), any()))
+                .thenReturn(result(retryTarget, true, false, null));
+
+        deliveryService.process(notification.getId());
+
+        verify(pushService).sendToAll(eq(List.of(retryTarget)), any());
+        verify(notificationService).markAsSent(notification.getId());
+        verify(notificationService, never()).markAsFailed(any(), any());
+        assertThat(sentDelivery.getAttemptCount()).isZero();
+        assertThat(pendingDelivery.getStatus()).isEqualTo(NotificationDeliveryStatus.SENT);
+        assertThat(pendingDelivery.getAttemptCount()).isEqualTo(1);
+    }
+
+    @Test
+    void partialFirstAttemptSchedulesRetryWithoutResendingSuccessfulDevice() {
+        Notification notification = notification();
+        PushSubscription delivered = subscription();
+        PushSubscription failed = subscription();
+        when(notificationService.lockDueNotification(eq(notification.getId()), any()))
+                .thenReturn(Optional.of(notification));
+        when(pushSubscriptionRepository.findByUserIdAndRevokedFalse(notification.getRecipientId()))
+                .thenReturn(List.of(delivered, failed));
+        when(notificationDeliveryRepository.save(any(NotificationDelivery.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(pushService.sendToAll(eq(List.of(delivered, failed)), any()))
+                .thenReturn(new PushService.AggregatedResult(List.of(
+                        new PushService.SubscriptionResult(delivered.getId(), true, false, null),
+                        new PushService.SubscriptionResult(
+                                failed.getId(), false, false, "Push HTTP 500"))));
+
+        deliveryService.process(notification.getId());
+
+        verify(notificationService).markForRetry(notification.getId(), "Push HTTP 500");
+    }
+
+    private PushService.AggregatedResult result(PushSubscription subscription,
+                                                boolean success,
+                                                boolean gone,
+                                                String error) {
+        return new PushService.AggregatedResult(List.of(new PushService.SubscriptionResult(
+                subscription.getId(), success, gone, error)));
+    }
+
+    private PushSubscription subscription() {
+        PushSubscription subscription = new PushSubscription();
+        subscription.setId(UUID.randomUUID());
+        return subscription;
+    }
+
+    private NotificationDelivery delivery(Notification notification,
+                                          PushSubscription subscription,
+                                          NotificationDeliveryStatus status) {
+        NotificationDelivery delivery = new NotificationDelivery();
+        delivery.setId(UUID.randomUUID());
+        delivery.setNotificationId(notification.getId());
+        delivery.setSubscriptionId(subscription.getId());
+        delivery.setStatus(status);
+        return delivery;
     }
 
     private Notification notification() {

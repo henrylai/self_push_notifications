@@ -149,7 +149,7 @@ export default function SettingsPage() {
       </Card>
 
       {/* Logout */}
-      <Button variant="danger" size="lg" onClick={logout} className="w-full">
+      <Button variant="danger" size="lg" onClick={() => void logout()} className="w-full">
         Log Out
       </Button>
     </div>

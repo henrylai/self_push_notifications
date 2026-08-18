@@ -17,7 +17,7 @@ A feature or issue is "Done" when ALL of the following criteria are met.
 | 7 | **Push delivery tested** — Notifications deliver correctly on real device | Manual test |
 | 8 | **No regressions** — Existing functionality not broken | CI + manual |
 | 9 | **Code reviewed** — At least 1 approval from team member | GitHub PR |
-| 10 | **Deployed** — Merged to main and deployed to staging/production | Railway/Vercel |
+| 10 | **Deployed** — Merged to main and deployed to staging/production | Railway |
 
 ---
 
@@ -87,7 +87,7 @@ A feature or issue is "Done" when ALL of the following criteria are met.
 - Merged to `main` branch
 - CI/CD pipeline passes
 - Backend deployed to Railway
-- Frontend deployed to Vercel
+- Frontend deployed to Railway
 - Smoke test on production
 
 ---

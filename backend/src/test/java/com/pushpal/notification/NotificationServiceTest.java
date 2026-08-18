@@ -1,6 +1,7 @@
 package com.pushpal.notification;
 
 import com.pushpal.common.RateLimitExceededException;
+import com.pushpal.common.RateLimitService;
 import com.pushpal.relationship.RelationshipService;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,11 +31,15 @@ class NotificationServiceTest {
     @Mock
     private RelationshipService relationshipService;
 
+    @Mock
+    private RateLimitService rateLimitService;
+
     private NotificationService notificationService;
 
     @BeforeEach
     void setUp() {
-        notificationService = new NotificationService(notificationRepository, relationshipService);
+        notificationService = new NotificationService(
+                notificationRepository, relationshipService, rateLimitService);
     }
 
     @Test
@@ -82,8 +87,15 @@ class NotificationServiceTest {
     @Test
     void rejectsEleventhNotificationWithinHour() {
         UUID senderId = UUID.randomUUID();
-        when(notificationRepository.countBySenderIdAndCreatedAtAfter(
-                org.mockito.ArgumentMatchers.eq(senderId), any(Instant.class))).thenReturn(10L);
+        org.mockito.Mockito.doThrow(new RateLimitExceededException(
+                        "You can schedule at most 10 reminders per hour"))
+                .when(rateLimitService)
+                .checkAndRecord(
+                        org.mockito.ArgumentMatchers.eq(senderId),
+                        org.mockito.ArgumentMatchers.eq("NOTIFICATION_CREATE"),
+                        org.mockito.ArgumentMatchers.eq(10),
+                        any(),
+                        any());
 
         assertThatThrownBy(() -> notificationService.createNotification(senderId, validRequest(null)))
                 .isInstanceOf(RateLimitExceededException.class)

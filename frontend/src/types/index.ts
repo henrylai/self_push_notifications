@@ -22,6 +22,15 @@ export interface Notification {
   failureReason: string | null;
 }
 
+export interface NotificationPage {
+  received: Notification[];
+  sent: Notification[];
+  page: number;
+  size: number;
+  receivedHasMore: boolean;
+  sentHasMore: boolean;
+}
+
 export type NotificationIcon = 'bell' | 'heart' | 'star' | 'check' | 'calendar' | 'gift';
 
 export type NotificationStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'VIEWED' | 'FAILED' | 'CANCELLED';
@@ -57,6 +66,11 @@ export interface RegisterDeviceInput {
   p256dh: string;
   auth: string;
   userAgent?: string;
+  reactivate?: boolean;
+}
+
+export interface RegisterDeviceResponse extends MessageResponse {
+  deviceId: string;
 }
 
 export interface CreateNotificationInput {

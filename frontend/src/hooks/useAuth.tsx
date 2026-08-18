@@ -11,13 +11,14 @@ import {
   removeStoredUser,
 } from '@/lib/auth';
 import type { User } from '@/types';
+import { disableCurrentPushSubscription } from '@/lib/push';
 
 interface AuthContextValue {
   user: User | null;
   token: string | null;
   loading: boolean;
   login: (token: string, user: User) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -29,11 +30,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    const storedToken = getToken();
-    const storedUser = getStoredUser();
-    if (storedToken) setAuthToken(storedToken);
-    if (storedUser) setUser(storedUser);
-    setLoading(false);
+    const timer = window.setTimeout(() => {
+      const storedToken = getToken();
+      const storedUser = getStoredUser();
+      if (storedToken) setAuthToken(storedToken);
+      if (storedUser) setUser(storedUser);
+      setLoading(false);
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   const login = useCallback((newToken: string, newUser: User) => {
@@ -43,12 +47,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(newUser);
   }, []);
 
-  const logout = useCallback(() => {
-    removeToken();
-    removeStoredUser();
-    setAuthToken(null);
-    setUser(null);
-    router.replace('/login');
+  const logout = useCallback(async () => {
+    try {
+      await disableCurrentPushSubscription();
+    } catch {
+      // Unsubscribing locally still prevents future delivery if the API is unavailable.
+    } finally {
+      removeToken();
+      removeStoredUser();
+      setAuthToken(null);
+      setUser(null);
+      router.replace('/login');
+    }
   }, [router]);
 
   return (

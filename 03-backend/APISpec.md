@@ -169,22 +169,39 @@ Push subscription secrets are accepted during registration but are never returne
 
 ```json
 {
-  "endpoint": "https://push-service.example/subscription",
+  "endpoint": "https://fcm.googleapis.com/fcm/send/subscription",
   "p256dh": "browser_public_key",
   "auth": "browser_auth_secret",
-  "userAgent": "Browser user agent"
+  "userAgent": "Browser user agent",
+  "reactivate": true
 }
 ```
 
 ```json
 {
-  "message": "Subscription registered successfully"
+  "message": "Subscription registered successfully",
+  "deviceId": "uuid"
+}
+```
+
+Only HTTPS endpoints belonging to supported browser push services are accepted. `reactivate`
+must only be true after an explicit user action to enable notifications; background synchronization
+cannot resurrect a device that the user removed.
+
+### POST `/api/devices/unregister`
+
+Durably revoke the current browser subscription before locally unsubscribing it.
+
+```json
+{
+  "endpoint": "https://fcm.googleapis.com/fcm/send/subscription"
 }
 ```
 
 ### DELETE `/api/devices/{id}`
 
-Only the owning user can remove a device.
+Only the owning user can remove a device. Removal revokes the record so background registration
+cannot silently restore it.
 
 ```json
 {
@@ -234,6 +251,8 @@ Returns a notification object:
   "id": "uuid",
   "senderId": "uuid",
   "recipientId": "uuid",
+  "senderName": "Sender Name",
+  "recipientName": "Recipient Name",
   "title": "Take out the trash",
   "body": "Don't forget!",
   "icon": "calendar",
@@ -243,14 +262,19 @@ Returns a notification object:
 }
 ```
 
-### GET `/api/notifications`
+### GET `/api/notifications?page=0&size=50`
 
-Returns notifications scoped to the authenticated user:
+Returns notifications scoped to the authenticated user. `page` starts at zero and `size` is limited
+to 1–100. Self-reminders appear only in `sent`.
 
 ```json
 {
   "received": [],
-  "sent": []
+  "sent": [],
+  "page": 0,
+  "size": 50,
+  "receivedHasMore": false,
+  "sentHasMore": false
 }
 ```
 

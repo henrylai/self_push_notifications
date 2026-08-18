@@ -4,7 +4,7 @@
 
 PushPal is a scheduled push notification PWA built with:
 - **Backend:** Spring Boot 3 + Java 21 + PostgreSQL
-- **Frontend:** Next.js 14 + TypeScript + Tailwind CSS
+- **Frontend:** Next.js 16 + React 19 + TypeScript + Tailwind CSS
 - **Notifications:** Web Push (VAPID protocol)
 - **Deployment:** Railway
 

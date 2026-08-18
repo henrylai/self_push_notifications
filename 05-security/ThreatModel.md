@@ -6,14 +6,14 @@
 |---|---|---|---|
 | T1 | Unauthorized API access | High | JWT authentication on all protected endpoints |
 | T2 | Subscription hijacking | High | VAPID keys ensure only our server can send |
-| T3 | Spam / abuse | Medium | Rate limiting (10/hour unauthenticated, 30/hour authenticated) |
-| T4 | Stale push subscriptions | Medium | 410 Gone → automatic subscription cleanup |
+| T3 | Spam / abuse | Medium | Atomic per-user action rate limits |
+| T4 | Stale push subscriptions | Medium | 404/410 responses durably revoke the subscription |
 | T5 | SQL injection | High | JPA parameterized queries, no raw SQL |
 | T6 | XSS attacks | Medium | React auto-escaping + Content Security Policy |
 | T7 | CSRF attacks | Low | JWT in Authorization header (not cookies) |
 | T8 | Man-in-the-middle | High | HTTPS enforced everywhere (TLS 1.3) |
 | T9 | Data breach | High | Encryption at rest, no content logging, minimal data |
-| T10 | Push notification abuse | Medium | Only linked partners can send to each other |
+| T10 | Push notification abuse | Medium | Only linked Pals can send to each other |
 | T11 | Invite code brute force | Low | 6-char code, rate limiting, 7-day expiry |
 | T12 | Magic link interception | Medium | Single-use, 15-minute expiry, sent over TLS |
 | T13 | JWT theft | Medium | 7-day expiry, stored in localStorage, HTTPS only |
@@ -32,7 +32,7 @@
                        │ HTTPS (TLS 1.3)
 ┌──────────────────────▼──────────────────────────┐
 │                  CDN / EDGE                       │
-│  (Vercel - static frontend)                      │
+│  (Railway - static frontend)                     │
 └──────────────────────┬──────────────────────────┘
                        │ HTTPS
 ┌──────────────────────▼──────────────────────────┐
@@ -79,7 +79,8 @@
 **Attacker obtains a user's JWT token.**
 
 - **Impact:** Full account access
-- **Mitigation:** 7-day expiry limits window; HTTPS prevents interception; user can logout to invalidate
+- **Mitigation:** 7-day expiry limits the window; HTTPS prevents interception; logout removes the
+  token from that browser. Server-side token revocation is a future hardening item.
 - **Detection:** Anomalous IP patterns (future)
 
 ### Scenario 2: Push Subscription Theft
@@ -95,7 +96,7 @@
 **Attacker sends mass notifications to a user.**
 
 - **Impact:** Annoyance, potential harassment
-- **Mitigation:** Only linked partners can send; rate limiting; user can block (V2)
+- **Mitigation:** Only linked Pals can send; notification creation is limited to 10/hour
 - **Detection:** High notification volume (future)
 
 ### Scenario 4: Database Breach
@@ -119,8 +120,8 @@
 ### Authorization
 
 - Users can only access their own data
-- Notification sender/recipient must be the user or their linked partner
-- Relationship verification on every partner action
+- Notification sender/recipient must be the user or their linked Pal
+- Relationship verification on every Pal action
 
 ### Input Validation
 
@@ -132,10 +133,10 @@
 
 | Endpoint | Limit | Window |
 |---|---|---|
-| Auth endpoints | 3 | 1 hour |
-| Notification creation | 30 | 1 hour |
-| Invite code generation | 5 | 1 hour |
-| General API | 60 | 1 minute |
+| Magic-link requests | 5 per email | 1 hour |
+| Notification creation | 10 per user | 1 hour |
+| Invite code generation | 10 per user | 1 hour |
+| Invite acceptance attempts | 20 per user | 1 hour |
 
 ### Encryption
 

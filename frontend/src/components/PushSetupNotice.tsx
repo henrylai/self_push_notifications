@@ -16,23 +16,24 @@ export default function PushSetupNotice() {
 
   useEffect(() => {
     let active = true;
-    if (isIos() && !isStandalone()) {
-      setRequiresIosInstall(true);
-      setHasRegisteredDevice(false);
-      return () => {
-        active = false;
-      };
-    }
+    const timer = window.setTimeout(() => {
+      if (isIos() && !isStandalone()) {
+        setRequiresIosInstall(true);
+        setHasRegisteredDevice(false);
+        return;
+      }
 
-    syncExistingPushSubscription()
-      .then((isCurrentDeviceRegistered) => {
-        if (active) setHasRegisteredDevice(isCurrentDeviceRegistered);
-      })
-      .catch(() => {
-        if (active) setDevicesError('Unable to check notification setup.');
-      });
+      syncExistingPushSubscription()
+        .then((isCurrentDeviceRegistered) => {
+          if (active) setHasRegisteredDevice(isCurrentDeviceRegistered);
+        })
+        .catch(() => {
+          if (active) setDevicesError('Unable to check notification setup.');
+        });
+    }, 0);
     return () => {
       active = false;
+      window.clearTimeout(timer);
     };
   }, []);
 

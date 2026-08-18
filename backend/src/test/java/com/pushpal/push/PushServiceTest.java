@@ -34,7 +34,7 @@ class PushServiceTest {
     }
 
     @Test
-    void aggregatesResultsAndRemovesOnlyStaleSubscriptions() {
+    void aggregatesResultsAndRevokesOnlyStaleSubscriptions() {
         PushSubscription delivered = subscription();
         PushSubscription stale = subscription();
         PushSubscription failed = subscription();
@@ -52,7 +52,9 @@ class PushServiceTest {
         assertThat(result.successCount()).isEqualTo(1);
         assertThat(result.failureCount()).isEqualTo(2);
         assertThat(result.firstError()).isEqualTo("Subscription no longer valid (HTTP 410)");
-        verify(pushSubscriptionRepository).delete(stale);
+        assertThat(stale.isRevoked()).isTrue();
+        assertThat(stale.getRevocationReason()).isEqualTo("EXPIRED");
+        verify(pushSubscriptionRepository).save(stale);
         verifyNoMoreInteractions(pushSubscriptionRepository);
     }
 

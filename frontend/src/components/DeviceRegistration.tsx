@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Button from '@/components/ui/button';
 import Card from '@/components/ui/card';
 import { usePush } from '@/hooks/usePush';
 import { api } from '@/lib/api';
 import type { Device } from '@/types';
 import { useToast } from '@/components/ui/toast';
+import { disableCurrentPushSubscription, getCurrentDeviceId } from '@/lib/push';
 
 export default function DeviceRegistration() {
   const { permission, loading, error, register } = usePush();
@@ -15,11 +16,7 @@ export default function DeviceRegistration() {
   const [devicesError, setDevicesError] = useState('');
   const { addToast } = useToast();
 
-  useEffect(() => {
-    loadDevices();
-  }, []);
-
-  const loadDevices = async () => {
+  const loadDevices = useCallback(async () => {
     try {
       const data = await api.getDevices();
       setDevices(data);
@@ -29,7 +26,14 @@ export default function DeviceRegistration() {
     } finally {
       setLoadingDevices(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadDevices();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadDevices]);
 
   const handleRegister = async () => {
     if (await register(true)) {
@@ -40,7 +44,11 @@ export default function DeviceRegistration() {
 
   const handleRemove = async (id: string) => {
     try {
-      await api.removeDevice(id);
+      if (id === getCurrentDeviceId()) {
+        await disableCurrentPushSubscription();
+      } else {
+        await api.removeDevice(id);
+      }
       setDevices((prev) => prev.filter((d) => d.id !== id));
       addToast('Device removed');
     } catch (err) {

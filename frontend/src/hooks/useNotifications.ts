@@ -2,11 +2,11 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { Notification } from '@/types';
+import type { NotificationPage } from '@/types';
 
-export function useNotifications() {
-  return useQuery<{ received: Notification[]; sent: Notification[] }>({
-    queryKey: ['notifications'],
-    queryFn: api.getNotifications,
+export function useNotifications(page = 0) {
+  return useQuery<NotificationPage>({
+    queryKey: ['notifications', page],
+    queryFn: () => api.getNotifications(page),
   });
 }

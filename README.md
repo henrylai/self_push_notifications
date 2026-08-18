@@ -9,7 +9,7 @@ PushPal lets you schedule a push notification to arrive on your own phone or som
 ## Tech Stack
 
 - **Backend:** Spring Boot 3 + Java 21
-- **Frontend:** Next.js 14 (PWA) + TypeScript
+- **Frontend:** Next.js 16 + React 19 (PWA) + TypeScript
 - **Database:** PostgreSQL
 - **Notifications:** Web Push (VAPID)
 - **Hosting:** Railway
@@ -80,6 +80,7 @@ Copy `.env.example` files and fill in:
 - `VAPID_PUBLIC_KEY` — Web Push VAPID public key
 - `VAPID_PRIVATE_KEY` — Web Push VAPID private key
 - `VAPID_SUBJECT` — Contact email for VAPID
+- `API_BASE_URL` — Public HTTPS backend origin used by service-worker delivery callbacks
 - `GOOGLE_CLIENT_ID` — Google OAuth client ID
 - `GOOGLE_CLIENT_SECRET` — Google OAuth client secret
 - `MAGIC_LINK_BASE_URL` — Frontend origin used in magic links (e.g. `https://pushpal.up.railway.app`)
@@ -89,6 +90,9 @@ Copy `.env.example` files and fill in:
 - `NEXT_PUBLIC_API_URL` — Backend URL (default: `http://localhost:8080`)
 - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` — Same VAPID public key as backend
 - `NEXT_PUBLIC_GOOGLE_CLIENT_ID` — Google OAuth client ID (same as backend)
+
+Production readiness reports unhealthy at `/actuator/health` when either VAPID key or the public
+HTTPS `API_BASE_URL` is missing. Configure all three before routing deployment traffic.
 
 ### Generate VAPID Keys
 

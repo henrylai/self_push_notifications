@@ -45,7 +45,7 @@
 │                     FRONTEND (Vercel)                             │
 │                           │                                      │
 │  ┌────────────────────────▼────────────────────────────┐        │
-│  │              Next.js 14 (Static Export)               │        │
+│  │              Next.js 16 (Static Export)               │        │
 │  │              App Router | Tailwind CSS                 │        │
 │  │              shadcn/ui | TanStack Query                │        │
 │  └────────────────────────────────────────────────────┘        │
@@ -64,7 +64,7 @@
 | **Notification Service** | Spring Boot | Notification CRUD, status tracking |
 | **Scheduler Service** | Spring @Scheduled | Polls for due notifications, triggers push delivery |
 | **Push Service** | Web Push (VAPID) | Sends push notifications via push provider |
-| **Frontend** | Next.js 14 | PWA, UI, service worker, push subscription management |
+| **Frontend** | Next.js 16 + React 19 | PWA, UI, service worker, push subscription management |
 | **Database** | PostgreSQL | Persistent storage for all entities |
 
 ## Data Flow: Send Notification

@@ -7,6 +7,8 @@ public record NotificationDto(
         UUID id,
         UUID senderId,
         UUID recipientId,
+        String senderName,
+        String recipientName,
         String title,
         String body,
         String icon,
@@ -20,10 +22,18 @@ public record NotificationDto(
 ) {
 
     public static NotificationDto fromEntity(Notification notification) {
+        return fromEntity(notification, null, null);
+    }
+
+    public static NotificationDto fromEntity(Notification notification,
+                                             String senderName,
+                                             String recipientName) {
         return new NotificationDto(
                 notification.getId(),
                 notification.getSenderId(),
                 notification.getRecipientId(),
+                senderName,
+                recipientName,
                 notification.getTitle(),
                 notification.getBody(),
                 notification.getIcon().apiValue(),

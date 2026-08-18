@@ -1,6 +1,6 @@
 package com.pushpal.notification;
 
-import com.pushpal.common.RateLimitExceededException;
+import com.pushpal.common.RateLimitService;
 import com.pushpal.relationship.RelationshipService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,6 +28,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final RelationshipService relationshipService;
+    private final RateLimitService rateLimitService;
 
     @Transactional
     public Notification createNotification(UUID senderId, CreateNotificationRequest request) {
@@ -39,12 +40,12 @@ public class NotificationService {
             throw new AccessDeniedException("Notifications can only be sent to linked Pals");
         }
 
-        Instant now = Instant.now();
-        long recentNotifications = notificationRepository.countBySenderIdAndCreatedAtAfter(
-                senderId, now.minus(1, ChronoUnit.HOURS));
-        if (recentNotifications >= MAX_NOTIFICATIONS_PER_HOUR) {
-            throw new RateLimitExceededException("You can schedule at most 10 reminders per hour");
-        }
+        rateLimitService.checkAndRecord(
+                senderId,
+                "NOTIFICATION_CREATE",
+                MAX_NOTIFICATIONS_PER_HOUR,
+                Duration.ofHours(1),
+                "You can schedule at most 10 reminders per hour");
 
         Notification notification = new Notification();
         notification.setSenderId(senderId);
@@ -67,12 +68,12 @@ public class NotificationService {
         return notification;
     }
 
-    public List<Notification> getSentNotifications(UUID senderId) {
-        return notificationRepository.findBySenderIdOrderByCreatedAtDesc(senderId);
+    public Page<Notification> getSentNotifications(UUID senderId, Pageable pageable) {
+        return notificationRepository.findBySenderIdOrderByCreatedAtDesc(senderId, pageable);
     }
 
-    public List<Notification> getReceivedNotifications(UUID recipientId) {
-        return notificationRepository.findByRecipientIdOrderByScheduledTimeDesc(recipientId);
+    public Page<Notification> getReceivedNotifications(UUID recipientId, Pageable pageable) {
+        return notificationRepository.findReceivedNotifications(recipientId, pageable);
     }
 
     public Page<Notification> getPendingNotifications(Instant now, Pageable pageable) {

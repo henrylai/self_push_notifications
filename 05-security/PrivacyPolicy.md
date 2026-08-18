@@ -13,9 +13,9 @@ PushPal stores only the data necessary to provide the service:
 | Email address | Authentication and account identification | Until account deletion |
 | Display name | Display in the app | Until account deletion |
 | Push subscription tokens | Deliver push notifications | Until unsubscribed or account deletion |
-| Notification content (title, body) | Deliver scheduled reminders | Until user deletes or 90 days after delivery |
-| Invite codes | Link with partners | Until used or expired (7 days) |
-| Relationship data | Track partner links | Until unlinked |
+| Notification content (title, body) | Deliver scheduled reminders | Until account deletion |
+| Invite codes | Link with Pals | Until used or expired (7 days) |
+| Relationship data | Track Pal links | Until unlinked |
 
 ---
 
@@ -27,7 +27,6 @@ PushPal stores only the data necessary to provide the service:
 - Device information beyond push tokens
 - Browsing history
 - Contact lists
-- Notification content after delivery (auto-purge after 90 days)
 
 ---
 
@@ -35,7 +34,7 @@ PushPal stores only the data necessary to provide the service:
 
 1. **Authentication** — Your email is used to sign you in via Google or magic link
 2. **Push notifications** — Your push subscription token is used to deliver scheduled reminders
-3. **Partner linking** — Invite codes connect you with your partner
+3. **Pal linking** — Invite codes connect you with people you choose
 4. **Service improvement** — We track aggregate metrics (notification count, delivery rate) without personal data
 
 ---
@@ -51,7 +50,7 @@ The only third-party services we use:
 | Google OAuth2 | Authentication | None (we receive your email/name) |
 | Push services (FCM/APNs) | Deliver push notifications | Push subscription token only |
 | Railway | Hosting | All data (encrypted) |
-| Vercel | Frontend hosting | None (static files only) |
+| Railway | Application hosting | Application data required to operate the service |
 
 ---
 
@@ -66,8 +65,8 @@ You have the right to:
 
 ### How to Exercise Your Rights
 
-- **Delete account:** Settings > Account > Delete Account
-- **Export data:** Settings > Account > Export Data
+- **Delete or export account data:** Contact the service operator. Self-service deletion and export
+  are not yet available in the app.
 - **Unsubscribe:** Browser settings > Notifications > Remove PushPal
 
 ---
@@ -87,9 +86,9 @@ You have the right to:
 | Data | Retention Period |
 |---|---|
 | Account data | Until deletion |
-| Delivered notifications | 90 days, then auto-purged |
-| Push subscriptions | Until unsubscribed |
-| Invite codes | 7 days, then auto-deleted |
+| Delivered notifications | Until account deletion |
+| Push subscriptions | Active until unsubscribed; revocation record until account deletion |
+| Invite codes | Until account deletion; unusable after 7 days |
 | Logs | 30 days, no personal data |
 
 ---

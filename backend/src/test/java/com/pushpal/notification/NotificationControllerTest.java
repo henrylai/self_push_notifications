@@ -7,14 +7,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,11 +28,15 @@ class NotificationControllerTest {
     @Mock
     private DeliveryTokenProvider deliveryTokenProvider;
 
+    @Mock
+    private NotificationDtoMapper notificationDtoMapper;
+
     private NotificationController controller;
 
     @BeforeEach
     void setUp() {
-        controller = new NotificationController(notificationService, deliveryTokenProvider);
+        controller = new NotificationController(
+                notificationService, deliveryTokenProvider, notificationDtoMapper);
     }
 
     @Test
@@ -38,24 +44,26 @@ class NotificationControllerTest {
         UUID userId = UUID.randomUUID();
         Notification selfReminder = notification(userId, userId);
         Notification receivedReminder = notification(UUID.randomUUID(), userId);
-        when(notificationService.getReceivedNotifications(userId))
-                .thenReturn(List.of(selfReminder, receivedReminder));
-        when(notificationService.getSentNotifications(userId))
-                .thenReturn(List.of(selfReminder));
+        NotificationDto receivedDto = NotificationDto.fromEntity(receivedReminder);
+        NotificationDto sentDto = NotificationDto.fromEntity(selfReminder);
+        when(notificationService.getReceivedNotifications(
+                org.mockito.ArgumentMatchers.eq(userId), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(receivedReminder)));
+        when(notificationService.getSentNotifications(
+                org.mockito.ArgumentMatchers.eq(userId), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(selfReminder)));
+        when(notificationDtoMapper.mapAll(List.of(receivedReminder))).thenReturn(List.of(receivedDto));
+        when(notificationDtoMapper.mapAll(List.of(selfReminder))).thenReturn(List.of(sentDto));
 
-        ResponseEntity<Map<String, Object>> response = controller.listNotifications(userDetails(userId));
+        ResponseEntity<NotificationListDto> response = controller.listNotifications(
+                userDetails(userId), 0, 50);
 
-        assertThat(notifications(response.getBody(), "received"))
+        assertThat(response.getBody().received())
                 .extracting(NotificationDto::id)
                 .containsExactly(receivedReminder.getId());
-        assertThat(notifications(response.getBody(), "sent"))
+        assertThat(response.getBody().sent())
                 .extracting(NotificationDto::id)
                 .containsExactly(selfReminder.getId());
-    }
-
-    @SuppressWarnings("unchecked")
-    private List<NotificationDto> notifications(Map<String, Object> body, String key) {
-        return (List<NotificationDto>) body.get(key);
     }
 
     private UserDetails userDetails(UUID userId) {

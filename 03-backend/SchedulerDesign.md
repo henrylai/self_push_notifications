@@ -2,14 +2,15 @@
 
 ## Overview
 
-The Scheduler Service polls the database every 30 seconds for notifications that are due and triggers push delivery.
+The Scheduler Service polls the database every 10 seconds by default for notifications that are due
+and triggers push delivery. `SCHEDULER_INTERVAL_MS` can tune the interval.
 
 ---
 
 ## Polling Flow
 
 ```
-Every 30 seconds (@Scheduled fixedRate = 30000)
+Every 10 seconds (`SCHEDULER_INTERVAL_MS`, default 10000)
     │
     ▼
 ┌─────────────────────────────────┐
@@ -33,8 +34,8 @@ Every 30 seconds (@Scheduled fixedRate = 30000)
 ┌─────────────────────────────────┐
 │  3. Handle results:              │
 │     - Success → SENT             │
-│     - Expired sub → DELETE sub   │
-│     - Failure → Retry once       │
+│     - Expired sub → REVOKE sub   │
+│     - Device failure → Retry once│
 │       (60s delay)                │
 │     - Retry fails → FAILED       │
 └─────────────────────────────────┘
@@ -53,7 +54,7 @@ Every 30 seconds (@Scheduled fixedRate = 30000)
 ### Batch Size
 
 **50 notifications per cycle** — chosen because:
-- At 30s intervals, 50 notifications = ~100/minute throughput
+- At 10s intervals, 50 notifications = ~300/minute throughput
 - Sufficient for MVP (expected < 1K notifications/day)
 - Each notification may hit 1-2 subscriptions
 - Total push sends per cycle: ~50-100
@@ -62,7 +63,7 @@ Every 30 seconds (@Scheduled fixedRate = 30000)
 
 If throughput becomes a bottleneck:
 - Increase batch size (100, 200)
-- Decrease polling interval (15s, 10s)
+- Decrease the configured polling interval
 - Or move to event-driven (notification created → immediate queue)
 
 ---
@@ -70,51 +71,26 @@ If throughput becomes a bottleneck:
 ## Detailed Flow
 
 ```java
-@Scheduled(fixedRate = 30000)
-public void processDueNotifications() {
-    List<Notification> dueNotifications = notificationRepository
-        .findByStatusAndScheduledTimeBefore(
-            NotificationStatus.PENDING,
-            Instant.now(),
-            PageRequest.of(0, 50)
-        );
-
-    for (Notification notification : dueNotifications) {
-        processNotification(notification);
-    }
+@Scheduled(fixedDelayString = "${app.scheduler.interval-ms:10000}")
+public void processPendingNotifications() {
+    Page<Notification> pending = notificationService.getPendingNotifications(
+        Instant.now(), PageRequest.of(0, 50));
+    pending.forEach(notification -> deliveryService.process(notification.getId()));
 }
 
-private void processNotification(Notification notification) {
-    List<PushSubscription> subscriptions = subscriptionRepository
-        .findByUserId(notification.getRecipientId());
+@Transactional
+public void process(UUID notificationId) {
+    Notification notification = notificationService
+        .lockDueNotification(notificationId, Instant.now())
+        .orElse(null);
+    List<PushSubscription> activeSubscriptions = subscriptionRepository
+        .findByUserIdAndRevokedFalse(notification.getRecipientId());
+    List<NotificationDelivery> deliveries = ensureDeliveryRows(
+        notification, activeSubscriptions);
+    List<PushSubscription> targets = pendingDueSubscriptions(deliveries);
 
-    if (subscriptions.isEmpty()) {
-        notification.setStatus(NotificationStatus.FAILED);
-        notificationRepository.save(notification);
-        return;
-    }
-
-    boolean anySuccess = false;
-    for (PushSubscription subscription : subscriptions) {
-        SendResult result = pushService.send(
-            subscription,
-            NotificationPayload.from(notification)
-        );
-
-        switch (result.status()) {
-            case SUCCESS -> anySuccess = true;
-            case EXPIRED -> subscriptionRepository.delete(subscription);
-            case FAILED -> { /* log, continue */ }
-        }
-    }
-
-    if (anySuccess) {
-        notification.setStatus(NotificationStatus.SENT);
-    } else {
-        scheduleRetry(notification);
-    }
-
-    notificationRepository.save(notification);
+    applyResults(pushService.sendToAll(targets, payload(notification)), deliveries);
+    finalizeOrRetry(notification, deliveries);
 }
 ```
 
@@ -127,32 +103,24 @@ private void processNotification(Notification notification) {
 | Attempt | Timing | Action |
 |---|---|---|
 | 1st | Immediate (within cycle) | Send to all subscriptions |
-| 2nd (retry) | 60 seconds later | Send to remaining subscriptions |
+| 2nd (retry) | 60 seconds later | Send only to subscriptions that failed |
 | After 2nd failure | — | Mark as FAILED |
 
 ### Retry Implementation
 
-```java
-private void scheduleRetry(Notification notification) {
-    if (!notification.isRetried()) {
-        notification.setRetried(true);
-        notification.setRetryAt(Instant.now().plusSeconds(60));
-        notificationRepository.save(notification);
-    } else {
-        notification.setStatus(NotificationStatus.FAILED);
-        notificationRepository.save(notification);
-    }
-}
-```
+Each delivery row records its attempt count, next attempt, final status, and failure reason. A
+notification stays `PENDING` while any transient device failure is eligible for its one retry. It
+becomes `SENT` after every actionable device resolves successfully or becomes invalid, and becomes
+`FAILED` when a valid device still fails after the retry (or no device can receive it).
 
 ### Retry Query
 
 ```sql
 SELECT * FROM notifications
 WHERE status = 'PENDING'
-  AND scheduled_time <= NOW()
-  AND (retry_at IS NULL OR retry_at <= NOW())
-ORDER BY scheduled_time
+  AND ((retry_count = 0 AND scheduled_time <= NOW())
+    OR (retry_count > 0 AND next_attempt_at <= NOW()))
+ORDER BY COALESCE(next_attempt_at, scheduled_time)
 LIMIT 50;
 ```
 

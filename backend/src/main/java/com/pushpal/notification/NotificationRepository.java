@@ -16,9 +16,13 @@ import java.util.UUID;
 
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
 
-    List<Notification> findByRecipientIdOrderByScheduledTimeDesc(UUID recipientId);
+    @Query("SELECT n FROM Notification n WHERE n.recipientId = :recipientId "
+            + "AND (n.senderId IS NULL OR n.senderId <> :recipientId) "
+            + "ORDER BY n.scheduledTime DESC")
+    Page<Notification> findReceivedNotifications(@Param("recipientId") UUID recipientId,
+                                                 Pageable pageable);
 
-    List<Notification> findBySenderIdOrderByCreatedAtDesc(UUID senderId);
+    Page<Notification> findBySenderIdOrderByCreatedAtDesc(UUID senderId, Pageable pageable);
 
     long countBySenderIdAndCreatedAtAfter(UUID senderId, Instant createdAfter);
 

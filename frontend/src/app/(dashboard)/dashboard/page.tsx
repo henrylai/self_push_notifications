@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 import NotificationCard from '@/components/NotificationCard';
@@ -10,7 +10,7 @@ import PushSetupNotice from '@/components/PushSetupNotice';
 import Button from '@/components/ui/button';
 import { PlusCircle, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Notification } from '@/types';
+import type { NotificationPage } from '@/types';
 import { useToast } from '@/components/ui/toast';
 
 export default function DashboardPage() {
@@ -25,15 +25,16 @@ export default function DashboardPage() {
 
 function DashboardContent() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { addToast } = useToast();
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<'sent' | 'received'>('sent');
-  const { data: notifications, isLoading, isError, error, refetch } = useQuery<{
-    received: Notification[];
-    sent: Notification[];
-  }>({
-    queryKey: ['notifications'],
-    queryFn: api.getNotifications,
+  const [tab, setTab] = useState<'sent' | 'received'>(
+    searchParams.get('tab') === 'received' ? 'received' : 'sent'
+  );
+  const [page, setPage] = useState(0);
+  const { data: notifications, isLoading, isError, error, refetch } = useQuery<NotificationPage>({
+    queryKey: ['notifications', page],
+    queryFn: () => api.getNotifications(page),
   });
 
   const { data: user } = useQuery({
@@ -45,15 +46,32 @@ function DashboardContent() {
 
   useEffect(() => {
     if (!viewedId) return;
-    api.markViewed(viewedId).catch((markError: unknown) => {
-      addToast(markError instanceof Error ? markError.message : 'Unable to update reminder', 'error');
-    });
+    api.markViewed(viewedId)
+      .then((updated) => {
+        setTab('received');
+        setPage(0);
+        queryClient.setQueriesData<NotificationPage>(
+          { queryKey: ['notifications'] },
+          (existing) => existing ? {
+            ...existing,
+            received: existing.received.map((item) => item.id === updated.id ? updated : item),
+            sent: existing.sent.map((item) => item.id === updated.id ? updated : item),
+          } : existing,
+        );
+      })
+      .catch((markError: unknown) => {
+        addToast(markError instanceof Error ? markError.message : 'Unable to update reminder', 'error');
+      });
     const url = new URL(window.location.href);
     url.searchParams.delete('viewed');
     router.replace(url.pathname + url.search);
-  }, [addToast, viewedId, router]);
+  }, [addToast, viewedId, queryClient, router]);
 
-  const filtered = notifications?.[tab];
+  const displayedTab = viewedId ? 'received' : tab;
+  const filtered = notifications?.[displayedTab];
+  const hasMore = displayedTab === 'sent'
+    ? notifications?.sentHasMore
+    : notifications?.receivedHasMore;
 
   return (
     <div className="flex flex-col gap-4">
@@ -63,10 +81,15 @@ function DashboardContent() {
         {(['sent', 'received'] as const).map((t) => (
           <button
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => {
+              setTab(t);
+              setPage(0);
+            }}
             className={cn(
               'flex-1 rounded-md py-2 text-sm font-medium transition-colors',
-              tab === t ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              displayedTab === t
+                ? 'bg-white text-gray-900 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
             )}
           >
             {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -107,6 +130,26 @@ function DashboardContent() {
               onCancel={() => refetch()}
             />
           ))}
+        </div>
+      )}
+
+      {!isLoading && !isError && (page > 0 || hasMore) && (
+        <div className="flex items-center justify-between gap-3">
+          <Button
+            variant="secondary"
+            onClick={() => setPage((current) => Math.max(0, current - 1))}
+            disabled={page === 0}
+          >
+            Newer
+          </Button>
+          <span className="text-xs text-gray-500">Page {page + 1}</span>
+          <Button
+            variant="secondary"
+            onClick={() => setPage((current) => current + 1)}
+            disabled={!hasMore}
+          >
+            Older
+          </Button>
         </div>
       )}
 

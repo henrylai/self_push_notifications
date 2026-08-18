@@ -1,5 +1,7 @@
 import { api } from './api';
 
+const CURRENT_DEVICE_ID_KEY = 'pushpal_device_id';
+
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration> {
   if (!('serviceWorker' in navigator)) {
     throw new Error('Service workers are not supported in this browser');
@@ -34,7 +36,7 @@ export async function subscribeToPush(
       applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
     });
 
-  await registerPushSubscription(subscription);
+  await registerPushSubscription(subscription, true);
 
   return subscription;
 }
@@ -51,17 +53,54 @@ export async function syncExistingPushSubscription(): Promise<boolean> {
   const subscription = await registration.pushManager.getSubscription();
   if (!subscription) return false;
 
-  await registerPushSubscription(subscription);
+  await registerPushSubscription(subscription, false);
   return true;
 }
 
-async function registerPushSubscription(subscription: PushSubscription): Promise<void> {
-  await api.registerDevice({
+export function getCurrentDeviceId(): string | null {
+  return typeof window === 'undefined' ? null : localStorage.getItem(CURRENT_DEVICE_ID_KEY);
+}
+
+export async function disableCurrentPushSubscription(): Promise<void> {
+  if (typeof window === 'undefined') return;
+
+  const registration = 'serviceWorker' in navigator
+    ? await navigator.serviceWorker.getRegistration()
+    : undefined;
+  const subscription = await registration?.pushManager.getSubscription();
+  const deviceId = getCurrentDeviceId();
+  let serverError: unknown;
+
+  try {
+    if (subscription) {
+      await api.unregisterDevice(subscription.endpoint);
+    } else if (deviceId) {
+      await api.removeDevice(deviceId);
+    }
+  } catch (error) {
+    serverError = error;
+  }
+
+  if (subscription) {
+    await subscription.unsubscribe();
+  }
+  localStorage.removeItem(CURRENT_DEVICE_ID_KEY);
+
+  if (serverError) throw serverError;
+}
+
+async function registerPushSubscription(
+  subscription: PushSubscription,
+  reactivate: boolean
+): Promise<void> {
+  const response = await api.registerDevice({
     endpoint: subscription.endpoint,
     p256dh: encodeSubscriptionKey(subscription, 'p256dh'),
     auth: encodeSubscriptionKey(subscription, 'auth'),
     userAgent: navigator.userAgent,
+    reactivate,
   });
+  localStorage.setItem(CURRENT_DEVICE_ID_KEY, response.deviceId);
 }
 
 function encodeSubscriptionKey(subscription: PushSubscription, name: 'p256dh' | 'auth'): string {

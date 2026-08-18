@@ -8,9 +8,8 @@ import java.util.UUID;
 
 public interface PushSubscriptionRepository extends JpaRepository<PushSubscription, UUID> {
 
-    List<PushSubscription> findByUserId(UUID userId);
+    List<PushSubscription> findByUserIdAndRevokedFalse(UUID userId);
 
     Optional<PushSubscription> findByEndpoint(String endpoint);
 
-    void deleteByEndpoint(String endpoint);
 }

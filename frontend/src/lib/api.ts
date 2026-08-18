@@ -4,7 +4,9 @@ import type {
   Device,
   MessageResponse,
   Notification,
+  NotificationPage,
   RegisterDeviceInput,
+  RegisterDeviceResponse,
   Relationship,
   User,
 } from '@/types';
@@ -70,9 +72,14 @@ export const api = {
 
   // Devices
   registerDevice: (subscription: RegisterDeviceInput) =>
-    request<MessageResponse>('/api/devices/register', {
+    request<RegisterDeviceResponse>('/api/devices/register', {
       method: 'POST',
       body: JSON.stringify(subscription),
+    }),
+  unregisterDevice: (endpoint: string) =>
+    request<MessageResponse>('/api/devices/unregister', {
+      method: 'POST',
+      body: JSON.stringify({ endpoint }),
     }),
   removeDevice: (id: string) =>
     request<MessageResponse>(`/api/devices/${id}`, { method: 'DELETE' }),
@@ -84,8 +91,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  getNotifications: () =>
-    request<{ received: Notification[]; sent: Notification[] }>('/api/notifications'),
+  getNotifications: (page = 0, size = 50) =>
+    request<NotificationPage>(`/api/notifications?page=${page}&size=${size}`),
   getNotification: (id: string) => request<Notification>(`/api/notifications/${id}`),
   cancelNotification: (id: string) =>
     request<MessageResponse>(`/api/notifications/${id}`, { method: 'DELETE' }),

@@ -28,12 +28,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       return;
     }
     api.getMe().then((user) => setUserName(user.name)).catch(() => {
-      logout();
+      void logout();
     });
   }, [logout, router]);
 
   const handleLogout = () => {
-    logout();
+    void logout();
   };
 
   return (

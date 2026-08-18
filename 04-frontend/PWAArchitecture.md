@@ -2,7 +2,7 @@
 
 ## Tech Stack
 
-- **Framework:** Next.js 14 (App Router)
+- **Framework:** Next.js 16 + React 19 (App Router)
 - **Rendering:** Static Export (`output: 'export'`)
 - **Styling:** Tailwind CSS
 - **Components:** shadcn/ui
@@ -33,8 +33,7 @@ frontend/
 │   │       └── page.tsx        # Notification detail
 │   └── settings/
 │       ├── page.tsx            # Settings page
-│       └── partner/
-│           └── page.tsx        # Partner linking
+│       └── settings/page.tsx   # Profile, Pal linking, and devices
 ├── components/
 │   ├── ui/                     # shadcn/ui components
 │   │   ├── button.tsx
@@ -47,7 +46,7 @@ frontend/
 │   │   └── skeleton.tsx
 │   ├── cards/
 │   │   ├── NotificationCard.tsx
-│   │   └── PartnerCard.tsx
+│   │   └── PalCard.tsx
 │   ├── forms/
 │   │   ├── NotificationForm.tsx
 │   │   ├── LoginForm.tsx
@@ -111,8 +110,7 @@ frontend/
 
 ```
 /settings
-├── page.tsx              # Profile, partner info
-└── partner/page.tsx      # Invite code generate/accept
+└── page.tsx              # Profile, Pal linking, and devices
 ```
 
 ---
@@ -185,4 +183,4 @@ Response → Cache → Component re-render
 | `/dashboard/new` | Yes | Create notification |
 | `/dashboard/[id]` | Yes | Notification detail |
 | `/settings` | Yes | User settings |
-| `/settings/partner` | Yes | Partner linking |
+| `/dashboard/settings` | Yes | Profile and Pal linking |

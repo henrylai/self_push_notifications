@@ -1,6 +1,6 @@
 # PushPal — Database Schema
 
-PostgreSQL 15, managed exclusively through Flyway migrations in
+PostgreSQL 16, managed exclusively through Flyway migrations in
 `backend/src/main/resources/db/migration`.
 
 ## `users`
@@ -58,13 +58,16 @@ CREATE TABLE push_subscriptions (
     p256dh TEXT NOT NULL,
     auth_key TEXT NOT NULL,
     user_agent TEXT,
+    revoked BOOLEAN NOT NULL DEFAULT FALSE,
+    revocation_reason VARCHAR(20),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     last_used_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 ```
 
 `endpoint` is globally unique, and `user_id` is indexed. Subscription endpoint and key columns are
-internal delivery credentials and must not be returned by public API responses.
+internal delivery credentials and must not be returned by public API responses. Revoked records
+are retained to preserve explicit user removal and are excluded from delivery.
 
 ## `notifications`
 
@@ -89,14 +92,23 @@ CREATE TABLE notifications (
 
 Statuses are `PENDING`, `SENT`, `DELIVERED`, `VIEWED`, `FAILED`, and `CANCELLED`.
 
-Indexes support recipient and sender history, due-notification polling, retry scheduling, and the
-per-sender rolling-hour rate-limit query:
+Indexes support recipient and sender history, due-notification polling, and retry scheduling:
 
 - `notifications(recipient_id)`
 - `notifications(sender_id)`
 - `notifications(status, scheduled_time) WHERE status = 'PENDING'`
 - `notifications(status, next_attempt_at) WHERE status = 'PENDING'`
-- `notifications(sender_id, created_at)`
+
+## `notification_deliveries`
+
+Tracks delivery state and attempts for each notification/subscription pair. Statuses are `PENDING`,
+`SENT`, `FAILED`, and `INVALID`. This allows a retry to target only failed devices rather than
+duplicating a notification on devices that already succeeded.
+
+## `rate_limit_events`
+
+Stores durable rate-limit events by user and action. A pessimistic user-row lock makes concurrent
+notification and Pal-invite limits atomic across application instances.
 
 ## Migration history
 
@@ -106,5 +118,10 @@ per-sender rolling-hour rate-limit query:
 | V2 | `V2__magic_link_tokens.sql` | Hashed single-use magic-link tokens |
 | V3 | `V3__notification_retry.sql` | Retry count, next-attempt timestamp, and retry index |
 | V4 | `V4__add_notification_rate_limit_index.sql` | Rolling-hour sender rate-limit index |
+| V5 | `V5__prevent_duplicate_pal_links.sql` | Prevent duplicate accepted Pal relationships |
+| V6 | `V6__add_notification_icon.sql` | Add the user-selected notification icon |
+| V7 | `V7__add_push_subscription_revocation.sql` | Persist user and provider subscription revocation |
+| V8 | `V8__add_notification_deliveries.sql` | Track delivery and retry state per device |
+| V9 | `V9__add_rate_limit_events.sql` | Atomic, durable action rate limits |
 
 Never edit an applied migration. Add a new versioned migration for every schema change.

@@ -25,17 +25,28 @@ public class DeviceController {
     private final DeviceService deviceService;
 
     @PostMapping("/register")
-    public ResponseEntity<Map<String, String>> registerSubscription(
+    public ResponseEntity<RegisterDeviceResponse> registerSubscription(
             @AuthenticationPrincipal UserDetails userDetails,
             @Valid @RequestBody RegisterDeviceRequest request) {
         UUID userId = UUID.fromString(userDetails.getUsername());
-        deviceService.registerSubscription(
+        PushSubscription subscription = deviceService.registerSubscription(
                 userId,
                 request.endpoint(),
                 request.p256dh(),
                 request.authKey(),
-                request.userAgent());
-        return ResponseEntity.ok(Map.of("message", "Subscription registered successfully"));
+                request.userAgent(),
+                request.reactivate());
+        return ResponseEntity.ok(new RegisterDeviceResponse(
+                "Subscription registered successfully", subscription.getId()));
+    }
+
+    @PostMapping("/unregister")
+    public ResponseEntity<Map<String, String>> unregisterCurrentSubscription(
+            @AuthenticationPrincipal UserDetails userDetails,
+            @Valid @RequestBody UnregisterDeviceRequest request) {
+        UUID userId = UUID.fromString(userDetails.getUsername());
+        deviceService.removeSubscriptionByEndpoint(request.endpoint(), userId);
+        return ResponseEntity.ok(Map.of("message", "Subscription removed"));
     }
 
     @DeleteMapping("/{id}")

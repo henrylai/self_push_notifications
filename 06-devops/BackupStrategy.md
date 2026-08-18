@@ -120,7 +120,7 @@ Railway supports point-in-time restore for PostgreSQL:
 |---|---|
 | Push subscription tokens | Can be re-registered |
 | JWT tokens | Stateless, not stored |
-| Frontend static files | On Vercel CDN, redeployable |
+| Frontend static files | Railway image, redeployable from Git |
 | Environment variables | Documented in secrets table |
 
 ---

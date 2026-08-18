@@ -226,7 +226,7 @@ When user creates/cancels a notification:
 ## Toast Notifications
 
 ```tsx
-// Success: "Scheduled!" / "Sent to [Partner]!" / "Cancelled"
+// Success: "Scheduled!" / "Sent to [Pal]!" / "Cancelled"
 // Error: "Something went wrong" / "Network error" / "Permission denied"
 // Duration: 3 seconds (success), 5 seconds (error)
 // Position: bottom center (mobile), bottom right (desktop)

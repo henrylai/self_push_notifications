@@ -39,6 +39,12 @@ public class PushSubscription {
     @Column(name = "last_used_at", nullable = false)
     private Instant lastUsedAt;
 
+    @Column(nullable = false)
+    private boolean revoked;
+
+    @Column(name = "revocation_reason", length = 20)
+    private String revocationReason;
+
     @PrePersist
     protected void onCreate() {
         id = UUID.randomUUID();

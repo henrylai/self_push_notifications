@@ -7,11 +7,11 @@
 | API Gateway | HTTP routing, CORS, rate limiting, error handling | Spring Boot (embedded Tomcat) | `backend/src/main/java/.../config/` |
 | Auth Service | Google OAuth2, magic link, JWT issuance/validation | Spring Security + OAuth2 | `backend/src/main/java/.../auth/` |
 | User Service | User CRUD, profile management | Spring Boot + JPA | `backend/src/main/java/.../user/` |
-| Relationship Service | Invite codes, couple linking | Spring Boot + JPA | `backend/src/main/java/.../relationship/` |
+| Relationship Service | Invite codes, Pal linking | Spring Boot + JPA | `backend/src/main/java/.../relationship/` |
 | Notification Service | Notification CRUD, status tracking | Spring Boot + JPA | `backend/src/main/java/.../notification/` |
 | Scheduler Service | Poll for due notifications, trigger delivery | Spring @Scheduled | `backend/src/main/java/.../scheduler/` |
 | Push Service | Send Web Push notifications | Web Push (VAPID) | `backend/src/main/java/.../push/` |
-| Frontend | PWA UI, service worker, push subscription | Next.js 14 + React | `frontend/` |
+| Frontend | PWA UI, service worker, push subscription | Next.js 16 + React 19 | `frontend/` |
 | Database | Persistent storage | PostgreSQL 15 | Railway (managed) |
 
 ---
@@ -60,7 +60,7 @@
 **Responsibilities:**
 - Generate 6-character invite codes (7-day expiry)
 - Validate and accept invite codes
-- Create couple links
+- Create Pal links
 - List user relationships
 
 **Tech:** Spring Data JPA, UserRelationship entity
@@ -70,7 +70,7 @@
 ### Notification Service
 
 **Responsibilities:**
-- Create notifications (self or partner)
+- Create notifications (self or Pal)
 - List sent/received notifications
 - Get notification details
 - Cancel pending notifications
@@ -84,7 +84,7 @@
 ### Scheduler Service
 
 **Responsibilities:**
-- Poll database every 30 seconds for due notifications
+- Poll the database every 10 seconds by default for due notifications
 - Batch process up to 50 notifications per cycle
 - Delegate to Push Service for delivery
 - Handle delivery results (success/failure)
@@ -100,7 +100,7 @@
 - Send Web Push notifications via VAPID
 - Handle multiple subscriptions per user
 - Detect expired subscriptions (410 Gone)
-- Clean up stale subscriptions
+- Revoke stale subscriptions while preserving explicit user removal
 - Abstract provider interface for future extensibility
 
 **Tech:** Web Push library (web-push-java), VAPID keys
@@ -118,7 +118,7 @@
 - Push subscription registration
 - Service worker for push handling
 
-**Tech:** Next.js 14, React, TypeScript, Tailwind CSS, shadcn/ui, TanStack Query
+**Tech:** Next.js 16, React 19, TypeScript, Tailwind CSS, shadcn/ui, TanStack Query
 
 ---
 
@@ -131,4 +131,5 @@
 
 **Tech:** PostgreSQL 15, managed by Railway
 
-**Tables:** `users`, `user_relationships`, `push_subscriptions`, `notifications`
+**Tables:** `users`, `user_relationships`, `push_subscriptions`, `notifications`,
+`notification_deliveries`, `rate_limit_events`

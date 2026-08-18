@@ -16,5 +16,6 @@ public record RegisterDeviceRequest(
         @Size(max = 512, message = "Auth key is too long")
         String authKey,
         @Size(max = 2048, message = "User agent is too long")
-        String userAgent
+        String userAgent,
+        boolean reactivate
 ) {}
